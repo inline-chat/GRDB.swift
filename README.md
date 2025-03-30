@@ -4,13 +4,13 @@
 
 This is a fork of [GRDB](https://github.com/groue/GRDB.swift) with added support for [SQLCipher Community Edition](https://www.zetetic.net/sqlcipher/open-source/), packaged into XCFramework so that it can be consumed as a Swift Package, for Inline, initially made by DuckDuckGo.
 
-The default branch for this repository is `main` (as opposed to upstream's `master`) and it doesn't include GRDB (or SQLCipher) source code – only the Swift Package definition and release scripts/assets. XCFramework archives are attached directly in [GitHub Releases](https://github.com/inlinehq/GRDB.swift/releases).
+The default branch for this repository is `main` (as opposed to upstream's `master`) and it doesn't include GRDB (or SQLCipher) source code – only the Swift Package definition and release scripts/assets. XCFramework archives are attached directly in [GitHub Releases](https://github.com/inline-chat/GRDB.swift/releases).
 
 ## Version
 
-* This Package: *3.0.7*
-* GRDB: *7.0.0-beta.6*
-* SQLCipher: *4.6.1*
+* This Package: *3.1.0*
+* GRDB: *7.4.1*
+* SQLCipher: *4.7.0*
 
 ## Contributions
 
