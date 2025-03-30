@@ -388,11 +388,11 @@ make_release() {
 	git push origin main
 	git push origin "$new_version"
 
-	gh release create "$new_version" --generate-notes "${xcframework_zip}" --repo inlinehq/GRDB.swift
+	gh release create "$new_version" --generate-notes "${xcframework_zip}" --repo inline-chat/GRDB.swift
 
 	cat <<-EOF
 
-		🎉 Release is ready at https://github.com/inlinehq/GRDB.swift/releases/tag/${new_version}
+		🎉 Release is ready at https://github.com/inline-chat/GRDB.swift/releases/tag/${new_version}
 	EOF
 }
 
