@@ -1,4 +1,4 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -15,8 +15,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "GRDB",
-            url: "https://github.com/inline-chat/GRDB.swift/releases/download/3.1.0/GRDB.xcframework.zip",
-            checksum: "f6fa67a7ae52c99f96f7859e506c2186e30313c92a50dd7f7a9303af2b5a7bf3"
+            url: "https://github.com/inline-chat/GRDB.swift/releases/download/3.1.1/GRDB.xcframework.zip",
+            checksum: "d0cb96c05a0605b435b74e6f56470b9f175cd53db42c968a7ac1af7b67b34e3c"
         ),
         .target(name: "_GRDBDummy")
     ]
