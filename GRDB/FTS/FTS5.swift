@@ -63,12 +63,12 @@ public struct FTS5 {
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=1" tokenizer argument.
         case removeLegacy
-        #if GRDBCUSTOMSQLITE
+        #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=2" tokenizer argument,
         /// available from SQLite 3.27.0
         case remove
-        #elseif !GRDBCIPHER
+        #else
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=2" tokenizer argument,
         /// available from SQLite 3.27.0

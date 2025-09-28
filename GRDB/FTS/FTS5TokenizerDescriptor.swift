@@ -182,10 +182,10 @@ public struct FTS5TokenizerDescriptor: Sendable {
             break
         case .keep:
             components.append(contentsOf: ["remove_diacritics", "0"])
-        #if GRDBCUSTOMSQLITE
+        #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         case .remove:
             components.append(contentsOf: ["remove_diacritics", "2"])
-        #elseif !GRDBCIPHER
+        #else
         case .remove:
             components.append(contentsOf: ["remove_diacritics", "2"])
         #endif
