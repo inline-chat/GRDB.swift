@@ -1,4 +1,8 @@
+#if os(Linux)
+@preconcurrency import Dispatch
+#else
 import Dispatch
+#endif
 
 /// An actor that runs in a DispatchQueue.
 ///

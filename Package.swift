@@ -21,6 +21,8 @@ var swiftSettings: [SwiftSetting] = [
     // TODO: when Xcode support traits, remove all mentions of SQLITE_DISABLE_SNAPSHOT and update as below:
     // .define("SQLITE_ENABLE_SNAPSHOT", .when(platforms: darwinPlatforms, traits: ["GRDBSQLite"])),
     .define("SQLITE_ENABLE_SNAPSHOT"),
+    // Not all Linux distributions have support for WAL snapshots.
+    .define("SQLITE_DISABLE_SNAPSHOT", .when(platforms: [.linux])),
 ]
 var cSettings: [CSetting] = []
 var dependencies: [PackageDescription.Package.Dependency] = []
