@@ -1,11 +1,26 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import Foundation
 import PackageDescription
 
+let darwinPlatforms: [Platform] = [
+    .iOS,
+    .macOS,
+    .macCatalyst,
+    .tvOS,
+    .visionOS,
+    .watchOS,
+]
 var swiftSettings: [SwiftSetting] = [
     .define("SQLITE_ENABLE_FTS5"),
+    // Until Xcode has proper support for package traits, we must enable
+    // SQLITE_ENABLE_SNAPSHOT by default so that Xcode projects that build
+    // a Darwin app can depend on GRDB and profit from WAL snapshots.
+    // Package traits who want to disable snapshots must set SQLITE_DISABLE_SNAPSHOT.
+    // TODO: when Xcode support traits, remove all mentions of SQLITE_DISABLE_SNAPSHOT and update as below:
+    // .define("SQLITE_ENABLE_SNAPSHOT", .when(platforms: darwinPlatforms, traits: ["GRDBSQLite"])),
+    .define("SQLITE_ENABLE_SNAPSHOT"),
 ]
 var cSettings: [CSetting] = []
 var dependencies: [PackageDescription.Package.Dependency] = []
@@ -41,6 +56,10 @@ let package = Package(
         .library(name: "GRDB", targets: ["GRDB"]),
         .library(name: "GRDB-dynamic", type: .dynamic, targets: ["GRDB"]),
     ],
+    traits: [
+        "GRDBSQLite",
+        .default(enabledTraits: ["GRDBSQLite"]),
+    ],
     dependencies: dependencies,
     targets: [
         .systemLibrary(
@@ -48,7 +67,9 @@ let package = Package(
             providers: [.apt(["libsqlite3-dev"])]),
         .target(
             name: "GRDB",
-            dependencies: ["GRDBSQLite"],
+            dependencies: [
+                .target(name: "GRDBSQLite", condition: .when(traits: ["GRDBSQLite"])),
+            ],
             path: "GRDB",
             resources: [.copy("PrivacyInfo.xcprivacy")],
             cSettings: cSettings,
