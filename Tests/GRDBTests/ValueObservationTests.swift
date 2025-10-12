@@ -926,6 +926,7 @@ class ValueObservationTests: GRDBTestCase {
     }
 
     // MARK: - Async Await
+#if canImport(Combine)
     
     func testAsyncAwait_values_prefix() async throws {
         func test(_ writer: some DatabaseWriter) async throws {
@@ -1238,6 +1239,7 @@ class ValueObservationTests: GRDBTestCase {
         
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
     }
+#endif
     
     // Regression test for <https://github.com/groue/GRDB.swift/issues/1383>
     func testIssue1383() throws {

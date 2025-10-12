@@ -9,6 +9,7 @@ class DatabaseMigratorTests : GRDBTestCase {
         try migrator.migrate(writer)
     }
     
+    #if canImport(Combine)
     func testEmptyMigratorSync() throws {
         func test(writer: some DatabaseWriter) throws {
             let migrator = DatabaseMigrator()
@@ -347,6 +348,7 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
     }
     
+    #endif
     func testMigrationFailureTriggersRollback() throws {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("createPersons") { db in
