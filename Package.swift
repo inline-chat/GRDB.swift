@@ -14,8 +14,13 @@ let darwinPlatforms: [Platform] = [
 ]
 var swiftSettings: [SwiftSetting] = [
     .define("SQLITE_ENABLE_FTS5"),
-    // SQLite snapshots are available on the system SQLite on Darwin platforms.
-    .define("SQLITE_ENABLE_SNAPSHOT", .when(platforms: darwinPlatforms, traits: ["GRDBSQLite"])),
+    // Until Xcode has proper support for package traits, we must enable
+    // SQLITE_ENABLE_SNAPSHOT by default so that Xcode projects that build
+    // a Darwin app can depend on GRDB and profit from WAL snapshots.
+    // Package traits who want to disable snapshots must set SQLITE_DISABLE_SNAPSHOT.
+    // TODO: when Xcode support traits, remove all mentions of SQLITE_DISABLE_SNAPSHOT and update as below:
+    // .define("SQLITE_ENABLE_SNAPSHOT", .when(platforms: darwinPlatforms, traits: ["GRDBSQLite"])),
+    .define("SQLITE_ENABLE_SNAPSHOT"),
 ]
 var cSettings: [CSetting] = []
 var dependencies: [PackageDescription.Package.Dependency] = []

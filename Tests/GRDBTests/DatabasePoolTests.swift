@@ -53,7 +53,7 @@ class DatabasePoolTests: GRDBTestCase {
             XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-wal"))
             XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-shm"))
 
-#if SQLITE_ENABLE_SNAPSHOT
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
             // A non-empty wal file makes sure ValueObservation can use wal snapshots.
             // See <https://github.com/groue/GRDB.swift/issues/1383>
             let walURL = URL(fileURLWithPath: dbPool.path + "-wal")
@@ -77,7 +77,7 @@ class DatabasePoolTests: GRDBTestCase {
                 XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-wal"))
                 XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-shm"))
                 
-#if SQLITE_ENABLE_SNAPSHOT
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
                 // A non-empty wal file makes sure ValueObservation can use wal snapshots.
                 // See <https://github.com/groue/GRDB.swift/issues/1383>
                 let walURL = URL(fileURLWithPath: dbPool.path + "-wal")
@@ -103,7 +103,7 @@ class DatabasePoolTests: GRDBTestCase {
                 XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-wal"))
                 XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-shm"))
                 
-#if SQLITE_ENABLE_SNAPSHOT
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
                 // A non-empty wal file makes sure ValueObservation can use wal snapshots.
                 // See <https://github.com/groue/GRDB.swift/issues/1383>
                 let walURL = URL(fileURLWithPath: dbPool.path + "-wal")
@@ -126,7 +126,7 @@ class DatabasePoolTests: GRDBTestCase {
             XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-wal"))
             XCTAssertTrue(fm.fileExists(atPath: dbPool.path + "-shm"))
             
-#if SQLITE_ENABLE_SNAPSHOT
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
             // A non-empty wal file makes sure ValueObservation can use wal snapshots.
             // See <https://github.com/groue/GRDB.swift/issues/1383>
             let walURL = URL(fileURLWithPath: dbPool.path + "-wal")

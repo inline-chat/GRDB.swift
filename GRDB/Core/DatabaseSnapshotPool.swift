@@ -1,4 +1,4 @@
-#if SQLITE_ENABLE_SNAPSHOT
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
 // Import C SQLite functions
 #if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
