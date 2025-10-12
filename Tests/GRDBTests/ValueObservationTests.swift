@@ -1046,7 +1046,7 @@ class ValueObservationTests: GRDBTestCase {
     // An attempt at finding a regression test for <https://github.com/groue/GRDB.swift/issues/1362>
     func testManyObservations() throws {
         // TODO: Fix flaky test with SQLCipher 3
-        #if GRDBCIPHER
+        #if SQLITE_HAS_CODEC
         if Database.sqliteLibVersionNumber <= 3020001 {
             throw XCTSkip("Skip flaky test with SQLCipher 3")
         }
