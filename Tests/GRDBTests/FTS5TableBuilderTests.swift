@@ -160,7 +160,7 @@ class FTS5TableBuilderTests: GRDBTestCase {
     #else
     func testUnicode61TokenizerDiacriticsRemove() throws {
         guard #available(iOS 14, macOS 10.16, tvOS 14, *) else {
-            throw XCTSkip()
+            throw XCTSkip("remove_diacritics=2 is not available")
         }
         
         let dbQueue = try makeDatabaseQueue()
