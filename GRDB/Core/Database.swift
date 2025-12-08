@@ -880,6 +880,10 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
                 // 2. If we do not PRAGMA, we might leave a database
                 //    transaction in the read-only state, with no other
                 //    opportunity to quit it.
+                //
+                // As a workaround for an FTS5 bug (https://sqlite.org/forum/forumpost/137c7662b3),
+                // we must make sure we leave the interrupted state first:
+                resetAllPreparedStatements()
                 try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
             }
         }
@@ -1797,6 +1801,10 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
                 //    transaction open, with no other opportunity to close it.
                 //    This might trigger a fatal error in
                 //    `SerializedDatabase.preconditionNoUnsafeTransactionLeft`.
+                //
+                // As a workaround for an FTS5 bug (https://sqlite.org/forum/forumpost/137c7662b3),
+                // we must make sure we leave the interrupted state first:
+                resetAllPreparedStatements()
                 try execute(sql: "ROLLBACK TRANSACTION")
             }
         }
@@ -1811,6 +1819,19 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
     public func commit() throws {
         try execute(sql: "COMMIT TRANSACTION")
         assert(sqlite3_get_autocommit(sqliteConnection) != 0)
+    }
+    
+    /// Resets all prepared statements.
+    ///
+    /// This method helps clearing the interrupted state, as a workaround
+    /// for https://sqlite.org/forum/forumpost/137c7662b3, discovered
+    /// in https://github.com/groue/GRDB.swift/issues/1838.
+    func resetAllPreparedStatements() {
+        var stmt: SQLiteStatement? = sqlite3_next_stmt(sqliteConnection, nil)
+        while stmt != nil {
+            sqlite3_reset(stmt)
+            stmt = sqlite3_next_stmt(sqliteConnection, stmt)
+        }
     }
     
     // MARK: - Memory Management
