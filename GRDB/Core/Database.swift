@@ -863,7 +863,25 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         readOnlyDepth -= 1
         assert(readOnlyDepth >= 0, "unbalanced endReadOnly()")
         if readOnlyDepth == 0 {
-            try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
+            do {
+                try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
+            } catch is CancellationError, DatabaseError.SQLITE_INTERRUPT {
+                // Note: no test could take this path. Maybe `PRAGMA query_only` is
+                // not sensitive to SQLite interrupt. But if it is, this code is necessary.
+                //
+                // Maybe we were unlucky, and user has interrupted the database
+                // during the PRAGMA. CancellationError is thrown when
+                // the PRAGMA is interrupted during execution. SQLITE_INTERRUPT
+                // is thrown when the PRAGMA is interrupted during compilation.
+                //
+                // Let's run it again. This is a correct behavior, because:
+                // 1. Since the interrupt was concurrent, we can reorder it
+                //    and pretend it occurred before or after the PRAGMA.
+                // 2. If we do not PRAGMA, we might leave a database
+                //    transaction in the read-only state, with no other
+                //    opportunity to quit it.
+                try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
+            }
         }
     }
     
