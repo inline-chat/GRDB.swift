@@ -1764,7 +1764,23 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         // which rollback errors should be ignored, and which rollback errors
         // should be exposed to the library user.
         if isInsideTransaction {
-            try execute(sql: "ROLLBACK TRANSACTION")
+            do {
+                try execute(sql: "ROLLBACK TRANSACTION")
+            } catch is CancellationError, DatabaseError.SQLITE_INTERRUPT {
+                // Maybe we were unlucky, and user has interrupted the database
+                // during the rollback. CancellationError is thrown when
+                // the rollback is interrupted during execution. SQLITE_INTERRUPT
+                // is thrown when the rollback is interrupted during compilation.
+                //
+                // Let's rollback again. This is a correct behavior, because:
+                // 1. Since the interrupt was concurrent, we can reorder it
+                //    and pretend it occurred before or after the rollback.
+                // 2. If we do not rollback, we might leave a database
+                //    transaction open, with no other opportunity to close it.
+                //    This might trigger a fatal error in
+                //    `SerializedDatabase.preconditionNoUnsafeTransactionLeft`.
+                try execute(sql: "ROLLBACK TRANSACTION")
+            }
         }
         assert(!isInsideTransaction)
     }
