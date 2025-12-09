@@ -863,27 +863,14 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         readOnlyDepth -= 1
         assert(readOnlyDepth >= 0, "unbalanced endReadOnly()")
         if readOnlyDepth == 0 {
-            do {
-                try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
-            } catch is CancellationError, DatabaseError.SQLITE_INTERRUPT {
-                // Note: no test could take this path. Maybe `PRAGMA query_only` is
-                // not sensitive to SQLite interrupt. But if it is, this code is necessary.
-                //
-                // Maybe we were unlucky, and user has interrupted the database
-                // during the PRAGMA. CancellationError is thrown when
-                // the PRAGMA is interrupted during execution. SQLITE_INTERRUPT
-                // is thrown when the PRAGMA is interrupted during compilation.
-                //
-                // Let's run it again. This is a correct behavior, because:
-                // 1. Since the interrupt was concurrent, we can reorder it
-                //    and pretend it occurred before or after the PRAGMA.
-                // 2. If we do not PRAGMA, we might leave a database
-                //    transaction in the read-only state, with no other
-                //    opportunity to quit it.
-                //
-                // As a workaround for an FTS5 bug (https://sqlite.org/forum/forumpost/137c7662b3),
-                // we must make sure we leave the interrupted state first:
-                resetAllPreparedStatements()
+            // We MUST ignore interruptions when we leave the read-only mode,
+            // otherwise user could not write with this database
+            // connection again.
+            //
+            // It's OK to ignore interruption, since interruption is
+            // concurrent and we can pretend it occurred before or after
+            // the PRAGMA.
+            try ignoringInterruption {
                 try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
             }
         }
@@ -1320,6 +1307,31 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         }
         
         return try value()
+    }
+    
+    /// Returns the result of `value`. If `value` throws an interruption
+    /// error, it is retried a second time.
+    func ignoringInterruption<T>(_ value: () throws -> T) rethrows -> T {
+        do {
+            return try value()
+        }
+        catch is CancellationError,
+              DatabaseError.SQLITE_INTERRUPT,
+              DatabaseError.SQLITE_ABORT
+        {
+            // Maybe we were unlucky, and user has interrupted the database
+            // during `value` execution.
+            //
+            // Another possible cause for this error is the FTS5 bug
+            // described at <https://sqlite.org/forum/forumpost/137c7662b3>,
+            // which leaves the database in a sticky interrupted state.
+            // To workaround this bug, we must leave the interrupted state
+            // before retrying:
+            resetAllPreparedStatements()
+            
+            // Retry
+            return try value()
+        }
     }
     
     /// Support for `checkForSuspensionViolation(from:)`
@@ -1786,25 +1798,14 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         // which rollback errors should be ignored, and which rollback errors
         // should be exposed to the library user.
         if isInsideTransaction {
-            do {
-                try execute(sql: "ROLLBACK TRANSACTION")
-            } catch is CancellationError, DatabaseError.SQLITE_INTERRUPT {
-                // Maybe we were unlucky, and user has interrupted the database
-                // during the rollback. CancellationError is thrown when
-                // the rollback is interrupted during execution. SQLITE_INTERRUPT
-                // is thrown when the rollback is interrupted during compilation.
-                //
-                // Let's rollback again. This is a correct behavior, because:
-                // 1. Since the interrupt was concurrent, we can reorder it
-                //    and pretend it occurred before or after the rollback.
-                // 2. If we do not rollback, we might leave a database
-                //    transaction open, with no other opportunity to close it.
-                //    This might trigger a fatal error in
-                //    `SerializedDatabase.preconditionNoUnsafeTransactionLeft`.
-                //
-                // As a workaround for an FTS5 bug (https://sqlite.org/forum/forumpost/137c7662b3),
-                // we must make sure we leave the interrupted state first:
-                resetAllPreparedStatements()
+            // We MUST ignore interruptions during the rollback, otherwise
+            // we could leave a transaction open, and trigger a fatal error in
+            // `SerializedDatabase.preconditionNoUnsafeTransactionLeft`.
+            //
+            // It's OK to ignore interruption, since interruption is
+            // concurrent and we can pretend it occurred before or after
+            // the rollback.
+            try ignoringInterruption {
                 try execute(sql: "ROLLBACK TRANSACTION")
             }
         }
