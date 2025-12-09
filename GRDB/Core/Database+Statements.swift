@@ -513,6 +513,27 @@ extension Database {
             publicStatementArguments: configuration.publicStatementArguments)
     }
     
+    /// Always throws an error
+    func statementCompilationDidFail(
+        at statementStart: UnsafePointer<CChar>,
+        withResultCode resultCode: CInt
+    ) throws -> Never {
+        switch ResultCode(rawValue: resultCode) {
+        case .SQLITE_INTERRUPT, .SQLITE_ABORT:
+            // The only error that a user sees when a Task is cancelled
+            // is CancellationError.
+            try suspensionMutex.load().checkCancellation()
+        default:
+            break
+        }
+        
+        // Throw compilation failure
+        throw DatabaseError(
+            resultCode: resultCode,
+            message: lastErrorMessage,
+            sql: String(cString: statementStart))
+    }
+    
     private func checkForAutocommitTransition() {
         if sqlite3_get_autocommit(sqliteConnection) == 0 {
             if autocommitState == .on {

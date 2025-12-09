@@ -150,10 +150,7 @@ public final class Statement {
             &sqliteStatement, statementEnd)
         
         guard code == SQLITE_OK else {
-            throw DatabaseError(
-                resultCode: code,
-                message: database.lastErrorMessage,
-                sql: String(cString: statementStart))
+            try database.statementCompilationDidFail(at: statementStart, withResultCode: code)
         }
         
         guard let sqliteStatement else {
