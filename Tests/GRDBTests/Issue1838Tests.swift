@@ -24,4 +24,30 @@ class Issue1838Tests: GRDBTestCase {
         }
         XCTAssertEqual(documentCount, 0)
     }
+    
+    /// Tests about how we handle the FTS5 bug <https://sqlite.org/forum/forumpost/95413eb410>
+    func test_interrupted_commit() throws {
+        let dbQueue = try makeDatabaseQueue()
+        
+        try dbQueue.write { db in
+            try db.execute(sql: "CREATE VIRTUAL TABLE documents USING FTS5(content)")
+        }
+        
+        do {
+            try dbQueue.write { db in
+                try db.execute(sql: "INSERT INTO documents(content) VALUES ('Document')")
+                dbQueue.interrupt()
+            }
+            // Do not assert that the above code throws, because the
+            // FTS5 bug might be fixed in the tested SQLite version.
+        } catch DatabaseError.SQLITE_INTERRUPT {
+            // Fine: That's the FTS5 bug.
+        }
+        
+        // Make sure the interrupted state created by the FTS5 bug is no longer active.
+        let documentCount = try dbQueue.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM documents")!
+        }
+        XCTAssertEqual(documentCount, 0)
+    }
 }
