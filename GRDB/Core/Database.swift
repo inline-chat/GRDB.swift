@@ -863,7 +863,16 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         readOnlyDepth -= 1
         assert(readOnlyDepth >= 0, "unbalanced endReadOnly()")
         if readOnlyDepth == 0 {
-            try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
+            // We MUST ignore interruptions when we leave the read-only mode,
+            // otherwise user could not write with this database
+            // connection again.
+            //
+            // It's OK to ignore interruption, since interruption is
+            // concurrent and we can pretend it occurred before or after
+            // the PRAGMA.
+            try ignoringInterruption {
+                try internalCachedStatement(sql: "PRAGMA query_only = 0").execute()
+            }
         }
     }
     
@@ -1298,6 +1307,31 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         }
         
         return try value()
+    }
+    
+    /// Returns the result of `value`. If `value` throws an interruption
+    /// error, it is retried a second time.
+    func ignoringInterruption<T>(_ value: () throws -> T) rethrows -> T {
+        do {
+            return try value()
+        }
+        catch is CancellationError,
+              DatabaseError.SQLITE_INTERRUPT,
+              DatabaseError.SQLITE_ABORT
+        {
+            // Maybe we were unlucky, and user has interrupted the database
+            // during `value` execution.
+            //
+            // Another possible cause for this error is the FTS5 bug
+            // described at <https://sqlite.org/forum/forumpost/137c7662b3>,
+            // which leaves the database in a sticky interrupted state.
+            // To workaround this bug, we must leave the interrupted state
+            // before retrying:
+            resetAllPreparedStatements()
+            
+            // Retry
+            return try value()
+        }
     }
     
     /// Support for `checkForSuspensionViolation(from:)`
@@ -1764,7 +1798,16 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
         // which rollback errors should be ignored, and which rollback errors
         // should be exposed to the library user.
         if isInsideTransaction {
-            try execute(sql: "ROLLBACK TRANSACTION")
+            // We MUST ignore interruptions during the rollback, otherwise
+            // we could leave a transaction open, and trigger a fatal error in
+            // `SerializedDatabase.preconditionNoUnsafeTransactionLeft`.
+            //
+            // It's OK to ignore interruption, since interruption is
+            // concurrent and we can pretend it occurred before or after
+            // the rollback.
+            try ignoringInterruption {
+                try execute(sql: "ROLLBACK TRANSACTION")
+            }
         }
         assert(!isInsideTransaction)
     }
@@ -1777,6 +1820,19 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
     public func commit() throws {
         try execute(sql: "COMMIT TRANSACTION")
         assert(sqlite3_get_autocommit(sqliteConnection) != 0)
+    }
+    
+    /// Resets all prepared statements.
+    ///
+    /// This method helps clearing the interrupted state, as a workaround
+    /// for https://sqlite.org/forum/forumpost/137c7662b3, discovered
+    /// in https://github.com/groue/GRDB.swift/issues/1838.
+    func resetAllPreparedStatements() {
+        var stmt: SQLiteStatement? = sqlite3_next_stmt(sqliteConnection, nil)
+        while stmt != nil {
+            sqlite3_reset(stmt)
+            stmt = sqlite3_next_stmt(sqliteConnection, stmt)
+        }
     }
     
     // MARK: - Memory Management

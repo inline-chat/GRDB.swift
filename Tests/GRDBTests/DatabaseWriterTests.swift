@@ -896,4 +896,41 @@ class DatabaseWriterTests : GRDBTestCase {
         try await test(makeDatabasePool())
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))
     }
+    
+    // Regression test for https://github.com/groue/GRDB.swift/pull/1838
+    func test_cancellation_does_not_prevent_rollback() async throws {
+        func test(_ dbWriter: some DatabaseWriter) async throws {
+            // Numbers that have the test fail more or less reliably
+            // (on my machine) unless the #1838 patch is applied.
+            // When the test fails, we have a fatal error: A transaction has been left opened at the end of a database access.
+            let repeatCount = 400
+            let taskCount = 50
+            for _ in 0..<repeatCount {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for _ in 0..<taskCount{
+                        let task = Task {
+                            try await dbWriter.writeWithoutTransaction { db in
+                                try db.beginTransaction()
+                                try db.rollback()
+                            }
+                        }
+                        group.addTask {
+                            Task {
+                                // For the test to fail, we need to be lucky, here:
+                                // Cancellation must occur during the compilation
+                                // or the execution of the rollback statement.
+                                task.cancel()
+                            }
+                            // Ignore expected CancellationError
+                            try? await task.value
+                        }
+                    }
+                    try await group.waitForAll()
+                }
+            }
+        }
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+        try await test(AnyDatabaseWriter(makeDatabaseQueue()))
+    }
 }
