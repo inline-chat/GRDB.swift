@@ -7,6 +7,7 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 
 #### 7.x Releases
 
+- `7.9.x` Releases - [7.9.0](#790)
 - `7.8.x` Releases - [7.8.0](#780)
 - `7.7.x` Releases - [7.7.0](#770) - [7.7.1](#771)
 - `7.6.x` Releases - [7.6.0](#760) - [7.6.1](#761)
@@ -139,6 +140,37 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 - [0.110.0](#01100), ...
 
 ---
+
+## 7.9.0
+
+Released December 13, 2025
+
+- **Breaking Change**: Simplify the compiler checks for the availability of SQLite snapshots by [@groue](https://github.com/groue) in [#1826](https://github.com/groue/GRDB.swift/pull/1826)
+
+    This change aims at easing Linux and Android compatibility.
+    
+    **The library requirements are raised to Swift 6.1+, Xcode 16.3+.**
+
+- **Breaking Change**: Accept multiple SQLCipher libraries by [@groue](https://github.com/groue) in [#1819](https://github.com/groue/GRDB.swift/pull/1819)
+
+    This change aims at easing building GRDB against various SQLCipher flavors.
+    
+    **The compiler flag that enables new GRDB APIs for SQLCipher is now `SQLITE_HAS_CODEC`.**
+
+- **Fixed**: Fix cancellation of async tasks that use the FTS5 full-text engine by [@groue](https://github.com/groue) in [#1839](https://github.com/groue/GRDB.swift/pull/1839)
+
+    This workarounds an [SQLite bug](https://sqlite.org/forum/forumpost/95413eb410) that would trigger a GRDB crash, and improves the robustness of the library regarding database accesses cancellation and database interruption.
+
+- **New**: Improve the ergonomics of `DatabaseMigrator.registerMigration(_:foreignKeyChecks:merging:migrate)`, introduced in [#1818](https://github.com/groue/GRDB.swift/pull/1818), by accepting that the name of the merged migration is included in the set of merged migrations:
+
+    ```swift
+    // Used to fail, now OK:
+    migrator.registerMigration("v3", merging: ["v1", "v2", "v3"]) { ... }
+    //                         ~~~~                        ~~~~
+    
+    // The above code is equivalent to:
+    migrator.registerMigration("v3", merging: ["v1", "v2"]) { ... }
+    ```
 
 ## 7.8.0
 
@@ -4370,7 +4402,7 @@ Released April 3, 2017
 
 **Breaking Changes**
 
-- SQLite C API is now available right from the GRBD module: you don't need any longer to import `SQLiteiPhoneOS` module et al (see documentation for [Raw SQLite Pointers](https://github.com/groue/GRDB.swift#raw-sqlite-pointers)).
+- SQLite C API is now available right from the GRDB module: you don't need any longer to import `SQLiteiPhoneOS` module et al (see documentation for [Raw SQLite Pointers](https://github.com/groue/GRDB.swift#raw-sqlite-pointers)).
 - The [manual installation procedure for WatchOS extensions](https://github.com/groue/GRDB.swift#installation) has changed.
 - [Carthage](https://github.com/Carthage/Carthage) is no longer supported. At the present time it is unable to support the various frameworks built by GRDB (system SQLite, SQLCipher, custom SQLite builds, etc.)
 
