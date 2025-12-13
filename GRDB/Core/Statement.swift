@@ -1,10 +1,13 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+// #elseif SomeTrait
+// import ...
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -147,10 +150,7 @@ public final class Statement {
             &sqliteStatement, statementEnd)
         
         guard code == SQLITE_OK else {
-            throw DatabaseError(
-                resultCode: code,
-                message: database.lastErrorMessage,
-                sql: String(cString: statementStart))
+            try database.statementCompilationDidFail(at: statementStart, withResultCode: code)
         }
         
         guard let sqliteStatement else {

@@ -292,6 +292,7 @@
 		56BB6EA91D3009B100A1CA52 /* SchedulingWatchdog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56BB6EA81D3009B100A1CA52 /* SchedulingWatchdog.swift */; };
 		56BCA2622E6C28F800E4F08D /* DatabaseSchemaSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56BCA2612E6C28EF00E4F08D /* DatabaseSchemaSourceTests.swift */; };
 		56BF2282241781C5003D86EB /* UtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56BF2281241781C5003D86EB /* UtilsTests.swift */; };
+		56C7979B2EE99BD000AA265D /* Issue1838Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56C7979A2EE99BD000AA265D /* Issue1838Tests.swift */; };
 		56CC922C201DFFB900CB597E /* DropWhileCursorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56CC922B201DFFB900CB597E /* DropWhileCursorTests.swift */; };
 		56CC9243201E034D00CB597E /* PrefixWhileCursorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56CC9242201E034D00CB597E /* PrefixWhileCursorTests.swift */; };
 		56CC9246201E058100CB597E /* DropFirstCursorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56CC9245201E058000CB597E /* DropFirstCursorTests.swift */; };
@@ -802,6 +803,7 @@
 		56C3F7521CF9F12400F6A361 /* DatabaseSavepointTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DatabaseSavepointTests.swift; sourceTree = "<group>"; };
 		56C48E731C9A9923005DF1D9 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		56C494401ED7255500CC72AF /* GRDBDeploymentTarget.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GRDBDeploymentTarget.xcconfig; sourceTree = "<group>"; };
+		56C7979A2EE99BD000AA265D /* Issue1838Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Issue1838Tests.swift; sourceTree = "<group>"; };
 		56CC922B201DFFB900CB597E /* DropWhileCursorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropWhileCursorTests.swift; sourceTree = "<group>"; };
 		56CC9242201E034D00CB597E /* PrefixWhileCursorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrefixWhileCursorTests.swift; sourceTree = "<group>"; };
 		56CC9245201E058000CB597E /* DropFirstCursorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DropFirstCursorTests.swift; sourceTree = "<group>"; };
@@ -1448,6 +1450,7 @@
 				56B964C21DA521450002DA19 /* FTS5TableBuilderTests.swift */,
 				5698ACCA1DA62A2D0056AF8C /* FTS5TokenizerTests.swift */,
 				56ED8A7E1DAB8D6800BD0ABC /* FTS5WrapperTokenizerTests.swift */,
+				56C7979A2EE99BD000AA265D /* Issue1838Tests.swift */,
 			);
 			name = FTS;
 			sourceTree = "<group>";
@@ -2130,6 +2133,7 @@
 				56D496C11D81373A008276D7 /* DatabaseQueueBackupTests.swift in Sources */,
 				562393721DEE104400A6B01F /* MapCursorTests.swift in Sources */,
 				56D496571D81303E008276D7 /* FoundationDateComponentsTests.swift in Sources */,
+				56C7979B2EE99BD000AA265D /* Issue1838Tests.swift in Sources */,
 				568C3F7A2A5AB2C300A2309D /* ForeignKeyDefinitionTests.swift in Sources */,
 				56D496701D81309E008276D7 /* RecordPrimaryKeyRowIDTests.swift in Sources */,
 				5622060C1E420EB3005860AC /* DatabaseQueueConcurrencyTests.swift in Sources */,

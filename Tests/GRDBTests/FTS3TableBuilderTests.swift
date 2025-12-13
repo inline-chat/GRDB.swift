@@ -86,8 +86,11 @@ class FTS3TableBuilderTests: GRDBTestCase {
         }
     }
 
-    #if GRDBCUSTOMSQLITE
+    #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     func testUnicode61TokenizerDiacriticsRemove() throws {
+        guard Database.sqliteLibVersionNumber >= 3027000 else {
+            throw XCTSkip("remove_diacritics=2 is not available")
+        }
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
             try db.create(virtualTable: "documents", using: FTS3()) { t in
@@ -96,10 +99,10 @@ class FTS3TableBuilderTests: GRDBTestCase {
             assertDidExecute(sql: "CREATE VIRTUAL TABLE \"documents\" USING fts3(tokenize=unicode61 \"remove_diacritics=2\")")
         }
     }
-    #elseif !GRDBCIPHER
+    #else
     func testUnicode61TokenizerDiacriticsRemove() throws {
         guard #available(iOS 14, macOS 10.16, tvOS 14, *) else {
-            throw XCTSkip()
+            throw XCTSkip("remove_diacritics=2 is not available")
         }
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in

@@ -1,11 +1,14 @@
 #if SQLITE_ENABLE_FTS5
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+// #elseif SomeTrait
+// import ...
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -60,12 +63,12 @@ public struct FTS5 {
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=1" tokenizer argument.
         case removeLegacy
-        #if GRDBCUSTOMSQLITE
+        #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=2" tokenizer argument,
         /// available from SQLite 3.27.0
         case remove
-        #elseif !GRDBCIPHER
+        #else
         /// Remove diacritics from Latin script characters. This
         /// option matches the raw "remove_diacritics=2" tokenizer argument,
         /// available from SQLite 3.27.0

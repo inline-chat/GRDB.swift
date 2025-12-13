@@ -87,8 +87,24 @@ class FTS4TableBuilderTests: GRDBTestCase {
     }
     
     // TODO: why only custom SQLite build?
-    #if GRDBCUSTOMSQLITE
+    #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     func testUnicode61TokenizerDiacriticsRemove() throws {
+        guard Database.sqliteLibVersionNumber >= 3027000 else {
+            throw XCTSkip("remove_diacritics=2 is not available")
+        }
+        let dbQueue = try makeDatabaseQueue()
+        try dbQueue.inDatabase { db in
+            try db.create(virtualTable: "documents", using: FTS4()) { t in
+                t.tokenizer = .unicode61(diacritics: .remove)
+            }
+            assertDidExecute(sql: "CREATE VIRTUAL TABLE \"documents\" USING fts4(tokenize=unicode61 \"remove_diacritics=2\")")
+        }
+    }
+    #else
+    func testUnicode61TokenizerDiacriticsRemove() throws {
+        guard #available(iOS 14, macOS 10.16, tvOS 14, *) else {
+            throw XCTSkip("remove_diacritics=2 is not available")
+        }
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
             try db.create(virtualTable: "documents", using: FTS4()) { t in

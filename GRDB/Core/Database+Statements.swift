@@ -1,10 +1,13 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+// #elseif SomeTrait
+// import ...
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -508,6 +511,27 @@ extension Database {
             sql: statement.sql,
             arguments: arguments,
             publicStatementArguments: configuration.publicStatementArguments)
+    }
+    
+    /// Always throws an error
+    func statementCompilationDidFail(
+        at statementStart: UnsafePointer<CChar>,
+        withResultCode resultCode: CInt
+    ) throws -> Never {
+        switch ResultCode(rawValue: resultCode) {
+        case .SQLITE_INTERRUPT, .SQLITE_ABORT:
+            // The only error that a user sees when a Task is cancelled
+            // is CancellationError.
+            try suspensionMutex.load().checkCancellation()
+        default:
+            break
+        }
+        
+        // Throw compilation failure
+        throw DatabaseError(
+            resultCode: resultCode,
+            message: lastErrorMessage,
+            sql: String(cString: statementStart))
     }
     
     private func checkForAutocommitTransition() {
