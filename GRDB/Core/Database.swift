@@ -1313,7 +1313,7 @@ public final class Database: CustomStringConvertible, CustomDebugStringConvertib
     /// error, it is retried a second time.
     func ignoringInterruption<T>(_ value: () throws -> T) rethrows -> T {
         do {
-            return try value()
+            return try value() // swiftlint:disable:next statement_position
         }
         catch is CancellationError,
               DatabaseError.SQLITE_INTERRUPT,
