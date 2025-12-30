@@ -598,7 +598,6 @@ class TableRecordUpdateTests: GRDBTestCase {
     }
     
     func testRequestUpdateAndFetchCursor_view() throws {
-        #warning("TODO: document this caveat")
         // Mixing INSTEAD OF triggers and RETURNING used to trigger a bug
         // that was fixed in SQLite 3.42. The SQLite test linked below
         // landed on 2023-03-28, and SQLite 3.42 shipped on 2023-05-16.
