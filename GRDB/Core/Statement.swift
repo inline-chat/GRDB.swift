@@ -60,7 +60,7 @@ public final class Statement {
     
     /// The column names, ordered from left to right.
     public lazy var columnNames: [String] = {
-        // swiftlint:disable:next redundant_self_in_closure
+        // swiftlint:disable:next redundant_self
         let sqliteStatement = self.sqliteStatement
         return (0..<CInt(columnCount)).map { String(cString: sqlite3_column_name(sqliteStatement, $0)) }
     }()
