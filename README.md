@@ -199,7 +199,7 @@ try dbQueue.write { db in
     
     // Update a record
     player.score += 10
-    try score.update(db)
+    try player.update(db)
     
     try player.updateChanges { $0.score += 10 }
     
@@ -1652,7 +1652,7 @@ Records
 
 ```swift
 try dbQueue.write { db in
-    if var place = try Player.fetchOne(db, id: 1) {
+    if var player = try Player.fetchOne(db, id: 1) {
         player.score += 10
         try player.update(db)
     }
