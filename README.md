@@ -100,7 +100,7 @@ try dbQueue.write { db in
 }
 
 try dbQueue.read { db in
-    let player = try Player.find(db, id: "1"))
+    let player = try Player.find(db, id: "1")
     
     let bestPlayers = try Player
         .order(\.score.desc)
