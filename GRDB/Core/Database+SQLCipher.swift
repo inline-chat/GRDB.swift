@@ -1,5 +1,6 @@
 #if SQLITE_HAS_CODEC
 import SQLCipher
+import Foundation
 
 extension Database {
     
