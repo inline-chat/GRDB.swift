@@ -15,7 +15,7 @@ extension Database {
     /// Each log level is more verbose than the last. With ``debug`` and
     /// ``trace`` the logging system will generate a significant log volume.
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log_level
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log_level>
     ///
     /// ## Topics
     ///
@@ -43,7 +43,7 @@ extension Database {
     
     /// - Returns: the SQLCipher version
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_version
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_version>
     public var cipherVersion: String {
         get throws { try String.fetchOne(self, sql: "PRAGMA cipher_version")! }
     }
@@ -51,7 +51,7 @@ extension Database {
     /// - Returns: the SQLCipher fips status: 1 for fips mode, 0 for non-fips mode
     /// The FIPS status will not be initialized until the database connection has been keyed
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_fips_status
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_fips_status>
     public var cipherFipsStatus: String? {
         get throws { try String.fetchOne(self, sql: "PRAGMA cipher_fips_status") }
     }
@@ -59,7 +59,7 @@ extension Database {
     /// - Returns: The compiled crypto provider.
     /// The database must be keyed before requesting the name of the crypto provider.
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_provider
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_provider>
     public var cipherProvider: String? {
         get throws { try String.fetchOne(self, sql: "PRAGMA cipher_provider") }
     }
@@ -67,7 +67,7 @@ extension Database {
     /// - Returns: the version number provided from the compiled crypto provider.
     /// This value, if known, is available only after the database has been keyed.
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_provider_version
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_provider_version>
     public var cipherProviderVersion: String? {
         get throws { try String.fetchOne(self, sql: "PRAGMA cipher_provider_version") }
     }
@@ -145,8 +145,8 @@ extension Database {
     /// Failure to provide a license code, or use of an expired trial code,
     /// will result in an `SQLITE_AUTH (23)` error code reported from the SQLite API
     /// License Codes will activate SQLCipher Commercial or Enterprise packages
-    /// from Zetetic: https://www.zetetic.net/sqlcipher/buy/
-    /// 15-day free trials are available by request: https://www.zetetic.net/sqlcipher/trial/
+    /// from Zetetic: <https://www.zetetic.net/sqlcipher/buy/>
+    /// 15-day free trials are available by request: <https://www.zetetic.net/sqlcipher/trial/>
     ///
     /// Call this method from ``Configuration/prepareDatabase(_:)``,
     /// as in the example below:
@@ -158,7 +158,7 @@ extension Database {
     /// }
     /// ```
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_license
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_license>
     /// - Parameter license: base64 SQLCipher license code to activate SQLCipher commercial
     public func applyLicense(_ license: String) throws {
         try execute(sql: "PRAGMA cipher_license = '\(license)'")
@@ -181,7 +181,7 @@ extension Database {
     
     /// Instructs SQLCipher to disable logging internal debugging and operational information
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log>
     public func disableCipherLogging() throws {
         try execute(sql: "PRAGMA cipher_log_level = \(CipherLogLevel.none.rawValue.uppercased())")
     }
