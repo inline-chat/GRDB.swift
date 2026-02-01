@@ -62,8 +62,9 @@
 /// - ``insertAndFetch(_:onConflict:as:)``
 /// - ``insertAndFetch(_:onConflict:selection:fetch:)``
 /// - ``insertAndFetch(_:onConflict:fetch:select:)``
-/// - ``upsertAndFetch(_:onConflict:doUpdate:)``
-/// - ``upsertAndFetch(_:as:onConflict:doUpdate:)``
+/// - ``upsertAndFetch(_:onConflict:updating:doUpdate:)``
+/// - ``upsertAndFetch(_:as:onConflict:updating:doUpdate:)``
+/// - ``UpsertUpdateStrategy``
 ///
 /// ### Updating a Record
 ///
