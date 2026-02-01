@@ -11,16 +11,34 @@ import Foundation
 extension Database {
     
     /// Granularitly of SQLCipher log outputs
-    /// Each log level is more verbose than the last
+    ///
+    /// Each log level is more verbose than the last. With ``debug`` and
+    /// ``trace`` the logging system will generate a significant log volume.
     ///
     /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log_level
-    public enum CipherLogLevel: String {
-        case none
-        case error
-        case warn
-        case info
-        case debug
-        case trace
+    ///
+    /// ## Topics
+    ///
+    /// ### Log Levels
+    ///
+    /// - ``none``
+    /// - ``error``
+    /// - ``warn``
+    /// - ``info``
+    /// - ``debug``
+    /// - ``trace``
+    public struct CipherLogLevel: RawRepresentable, Sendable {
+        public var rawValue: String
+        public init(rawValue: String) {
+            self.rawValue = rawValue
+        }
+        
+        public static let none = Self(rawValue: "NONE")
+        public static let error = Self(rawValue: "ERROR")
+        public static let warn = Self(rawValue: "WARN")
+        public static let info = Self(rawValue: "INFO")
+        public static let debug = Self(rawValue: "DEBUG")
+        public static let trace = Self(rawValue: "TRACE")
     }
     
     /// - Returns: the SQLCipher version
