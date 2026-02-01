@@ -13,7 +13,7 @@ extension Database {
     /// Destination of SQLCipher logs.
     ///
     /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log>
-    public struct CipherLogTarget: Sendable {
+    public struct SQLCipherLogTarget: Sendable {
         public var rawValue: String
         public init(rawValue: String) {
             self.rawValue = rawValue
@@ -42,7 +42,7 @@ extension Database {
     /// - ``info``
     /// - ``debug``
     /// - ``trace``
-    public struct CipherLogLevel: RawRepresentable, Sendable {
+    public struct SQLCipherLogLevel: RawRepresentable, Sendable {
         public var rawValue: String
         public init(rawValue: String) {
             self.rawValue = rawValue
@@ -169,13 +169,13 @@ extension Database {
     /// ```swift
     /// var config = Configuration()
     /// config.prepareDatabase { db in
-    ///     try db.applyLicense(license)
+    ///     try db.applySQLCipherLicense(license)
     /// }
     /// ```
     ///
     /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_license>
     /// - Parameter license: base64 SQLCipher license code to activate SQLCipher commercial
-    public func applyLicense(_ license: String) throws {
+    public func applySQLCipherLicense(_ license: String) throws {
         try execute(sql: "PRAGMA cipher_license = '\(license)'")
     }
     
@@ -187,8 +187,8 @@ extension Database {
     /// - Parameter logLevel: The granularity to use for the logging system - defaults to `DEBUG`.
     /// - Parameter target: The destination of SQLCipher logs - defaults to `.device`.
     public func enableCipherLogging(
-        logLevel: CipherLogLevel = .debug,
-        target: CipherLogTarget = .device
+        logLevel: SQLCipherLogLevel = .debug,
+        target: SQLCipherLogTarget = .device
     ) throws {
         // Pragma do not support SQL arguments. We need to generate SQL that contains literal values:
         // PRAGMA cipher_log = '/path/to/file'
