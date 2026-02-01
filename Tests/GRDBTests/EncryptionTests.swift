@@ -776,5 +776,25 @@ let testBundle = Bundle(for: GRDBTestCase.self)
             XCTAssertNotNil(try db.cipherProviderVersion)
         }
     }
+    
+    func test_enableCipherLogging() throws {
+        let dbQueue = try makeDatabaseQueue()
+        let cipherVersion = try dbQueue.read { try $0.cipherVersion }
+        if "4.0.0".compare(cipherVersion, options: .numeric) == .orderedDescending {
+            throw XCTSkip("SQLCipher logging is not available")
+        }
+        try dbQueue.inDatabase { db in
+            try db.enableCipherLogging()
+            try db.enableCipherLogging(logLevel: .error)
+            try db.enableCipherLogging(target: .stdout)
+            
+            let logFilePath = (NSTemporaryDirectory() as NSString).appendingPathComponent(ProcessInfo.processInfo.globallyUniqueString)
+            defer {
+                try? FileManager.default.removeItem(atPath: logFilePath)
+            }
+            try db.enableCipherLogging(target: .file(logFilePath))
+            XCTAssert(FileManager.default.fileExists(atPath: logFilePath))
+        }
+    }
 }
 #endif

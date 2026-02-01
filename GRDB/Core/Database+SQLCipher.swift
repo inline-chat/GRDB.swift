@@ -10,7 +10,22 @@ import Foundation
 
 extension Database {
     
-    /// Granularitly of SQLCipher log outputs
+    /// Destination of SQLCipher logs.
+    ///
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log>
+    public struct CipherLogTarget: Sendable {
+        public var rawValue: String
+        public init(rawValue: String) {
+            self.rawValue = rawValue
+        }
+        
+        public static let stdout = Self(rawValue: "stdout")
+        public static let stderr = Self(rawValue: "stderr")
+        public static let device = Self(rawValue: "device")
+        public static func file(_ path: String) -> Self { Self(rawValue: path) }
+    }
+    
+    /// Granularitly of SQLCipher log outputs.
     ///
     /// Each log level is more verbose than the last. With ``debug`` and
     /// ``trace`` the logging system will generate a significant log volume.
@@ -164,26 +179,30 @@ extension Database {
         try execute(sql: "PRAGMA cipher_license = '\(license)'")
     }
     
-    /// Instructs SQLCipher to log internal debugging and operational information
-    /// to the sepecified log target (device) using `os_log`
-    /// The supplied logLevel will determine the granularity of the logs output
-    /// Available logLevel options are: NONE, ERROR, WARN, INFO, DEBUG, TRACE
-    /// Note that each level is more verbose than the last,
-    /// and particularly with DEBUG and TRACE the logging system will generate
-    /// a significant log volume
+    /// Instructs SQLCipher to log internal debugging and operational information.
     ///
-    /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log
-    /// - Parameter logLevel: CipherLogLevel The granularity to use for the logging system - defaults to `DEBUG`
-    public func enableCipherLogging(logLevel: CipherLogLevel = .debug) throws {
-        try execute(sql: "PRAGMA cipher_log = device")
-        try execute(sql: "PRAGMA cipher_log_level = \(logLevel.rawValue.uppercased())")
+    /// The supplied ``logLevel`` determines the granularity of the logs output.
+    ///
+    /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log>
+    /// - Parameter logLevel: The granularity to use for the logging system - defaults to `DEBUG`.
+    /// - Parameter target: The destination of SQLCipher logs - defaults to `.device`.
+    public func enableCipherLogging(
+        logLevel: CipherLogLevel = .debug,
+        target: CipherLogTarget = .device
+    ) throws {
+        // Pragma do not support SQL arguments. We need to generate SQL that contains literal values:
+        // PRAGMA cipher_log = '/path/to/file'
+        // PRAGMA cipher_log_level = 'xxx'
+        let context = SQLGenerationContext(self, argumentsSink: .literalValues)
+        try execute(sql: SQL("PRAGMA cipher_log = \(target.rawValue)").sql(context))
+        try execute(sql: SQL("PRAGMA cipher_log_level = \(logLevel.rawValue.uppercased())").sql(context))
     }
     
-    /// Instructs SQLCipher to disable logging internal debugging and operational information
+    /// Instructs SQLCipher to disable logging internal debugging and operational information.
     ///
     /// See <https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_log>
     public func disableCipherLogging() throws {
-        try execute(sql: "PRAGMA cipher_log_level = \(CipherLogLevel.none.rawValue.uppercased())")
+        try execute(sql: "PRAGMA cipher_log_level = NONE")
     }
     
     internal func validateSQLCipher() throws {
