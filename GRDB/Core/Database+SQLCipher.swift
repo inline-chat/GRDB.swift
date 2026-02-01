@@ -148,13 +148,15 @@ extension Database {
     /// from Zetetic: https://www.zetetic.net/sqlcipher/buy/
     /// 15-day free trials are available by request: https://www.zetetic.net/sqlcipher/trial/
     ///
-    /// Call this method from `Configuration.prepareDatabase`,
+    /// Call this method from ``Configuration/prepareDatabase(_:)``,
     /// as in the example below:
     ///
-    ///     var config = Configuration()
-    ///     config.prepareDatabase { db in
-    ///         try db.applyLicense(license)
-    ///     }
+    /// ```swift
+    /// var config = Configuration()
+    /// config.prepareDatabase { db in
+    ///     try db.applyLicense(license)
+    /// }
+    /// ```
     ///
     /// See https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_license
     /// - Parameter license: base64 SQLCipher license code to activate SQLCipher commercial
