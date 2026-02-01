@@ -1,6 +1,11 @@
 import XCTest
-import CoreGraphics
 import GRDB
+
+#if canImport(CoreGraphics)
+import CoreGraphics
+#elseif !canImport(Darwin)
+import Foundation
+#endif
 
 class CGFloatTests: GRDBTestCase {
     
