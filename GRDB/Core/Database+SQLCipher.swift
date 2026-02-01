@@ -1,5 +1,11 @@
 #if SQLITE_HAS_CODEC
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
+#elseif SQLCipher
+import SQLCipher
+#else
+#error("No SQLCipher library configured")
+#endif
 import Foundation
 
 extension Database {
