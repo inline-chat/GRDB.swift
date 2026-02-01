@@ -15,6 +15,8 @@ let darwinPlatforms: [Platform] = [
 var swiftSettings: [SwiftSetting] = [
     .define("SQLITE_ENABLE_FTS5"),
     .define("SQLITE_ENABLE_SNAPSHOT"),
+    // Not all Linux distributions have support for WAL snapshots.
+    .define("SQLITE_DISABLE_SNAPSHOT", .when(platforms: [.linux])),
 ]
 var cSettings: [CSetting] = []
 var dependencies: [PackageDescription.Package.Dependency] = []

@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 // Inspired by https://github.com/groue/CombineExpectations
 import XCTest
 
@@ -207,3 +208,4 @@ class FailureTestCaseTests: FailureTestCase {
         }
     }
 }
+#endif

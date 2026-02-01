@@ -129,10 +129,12 @@ class DatabaseQueueTests: GRDBTestCase {
             XCTAssertEqual(db.configuration.label, nil)
             XCTAssertEqual(db.description, "GRDB.DatabaseQueue")
             
+#if canImport(Darwin)
             // This test CAN break in future releases: the dispatch queue labels
             // are documented to be a debug-only tool.
             let label = String(utf8String: __dispatch_queue_get_label(nil))
             XCTAssertEqual(label, "GRDB.DatabaseQueue")
+#endif
         }
     }
     
@@ -144,10 +146,12 @@ class DatabaseQueueTests: GRDBTestCase {
             XCTAssertEqual(db.configuration.label, "Toreador")
             XCTAssertEqual(db.description, "Toreador")
             
+#if canImport(Darwin)
             // This test CAN break in future releases: the dispatch queue labels
             // are documented to be a debug-only tool.
             let label = String(utf8String: __dispatch_queue_get_label(nil))
             XCTAssertEqual(label, "Toreador")
+#endif
         }
     }
     
@@ -221,6 +225,9 @@ class DatabaseQueueTests: GRDBTestCase {
     }
 
     func testQoS() throws {
+#if !canImport(Darwin)
+        throw XCTSkip("__dispatch_get_global_queue not available on non-Darwin platforms")
+#else
         func test(qos: DispatchQoS) throws {
             // https://forums.swift.org/t/what-is-the-default-target-queue-for-a-serial-queue/18094/5
             //
@@ -256,6 +263,7 @@ class DatabaseQueueTests: GRDBTestCase {
         
         try test(qos: .background)
         try test(qos: .userInitiated)
+#endif
     }
     
     // MARK: - SQLITE_BUSY prevention

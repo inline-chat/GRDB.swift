@@ -10,6 +10,9 @@ class DatabaseMigratorTests : GRDBTestCase {
     }
     
     func testEmptyMigratorSync() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             let migrator = DatabaseMigrator()
             try migrator.migrate(writer)
@@ -18,9 +21,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testEmptyMigratorAsync() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             let expectation = self.expectation(description: "")
             let migrator = DatabaseMigrator()
@@ -38,9 +45,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testEmptyMigratorPublisher() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             let migrator = DatabaseMigrator()
             let publisher = migrator.migratePublisher(writer)
@@ -51,9 +62,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testNonEmptyMigratorSync() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("createPersons") { db in
@@ -95,9 +110,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testNonEmptyMigratorAsync() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("createPersons") { db in
@@ -146,9 +165,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testNonEmptyMigratorPublisher() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("createPersons") { db in
@@ -198,9 +221,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
 
     func testEmptyMigratorPublisherIsAsynchronous() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             let migrator = DatabaseMigrator()
             let expectation = self.expectation(description: "")
@@ -220,9 +247,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testNonEmptyMigratorPublisherIsAsynchronous() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("first", migrate: { _ in })
@@ -243,9 +274,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testMigratorPublisherDefaultScheduler() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test<Writer: DatabaseWriter>(writer: Writer) {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("first", migrate: { _ in })
@@ -268,9 +303,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testMigratorPublisherCustomScheduler() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test<Writer: DatabaseWriter>(writer: Writer) {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("first", migrate: { _ in })
@@ -294,9 +333,13 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
 
     func testMigrateUpTo() throws {
+#if !canImport(Combine)
+        throw XCTSkip("Combine not supported on this platform")
+#else
         func test(writer: some DatabaseWriter) throws {
             var migrator = DatabaseMigrator()
             migrator.registerMigration("a") { db in
@@ -345,6 +388,7 @@ class DatabaseMigratorTests : GRDBTestCase {
         try Test(test).run { try DatabaseQueue() }
         try Test(test).runAtTemporaryDatabasePath { try DatabaseQueue(path: $0) }
         try Test(test).runAtTemporaryDatabasePath { try DatabasePool(path: $0) }
+#endif
     }
     
     func testMigrationFailureTriggersRollback() throws {

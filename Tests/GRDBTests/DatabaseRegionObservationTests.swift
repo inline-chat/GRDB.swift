@@ -4,12 +4,14 @@ import GRDB
 class DatabaseRegionObservationTests: GRDBTestCase {
     // Test passes if it compiles.
     // See <https://github.com/groue/GRDB.swift/issues/1541>
+    #if canImport(Combine)
     func testAnyDatabaseWriter(writer: any DatabaseWriter) throws {
         let observation = DatabaseRegionObservation(tracking: .fullDatabase)
         
         _ = observation.start(in: writer, onError: { _ in }, onChange: { _ in })
         _ = observation.publisher(in: writer)
     }
+    #endif
     
     func testDatabaseRegionObservation_FullDatabase() throws {
         let dbQueue = try makeDatabaseQueue()

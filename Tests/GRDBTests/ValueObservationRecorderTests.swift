@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Dispatch
 import XCTest
 
@@ -781,3 +782,4 @@ class ValueObservationRecorderTests: FailureTestCase {
         }
     }
 }
+#endif
