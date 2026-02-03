@@ -1,6 +1,5 @@
 import Foundation
 
-#if !os(Windows)
 /// NSURL stores its absoluteString in the database.
 extension NSURL: DatabaseValueConvertible {
     
@@ -20,7 +19,6 @@ extension NSURL: DatabaseValueConvertible {
         return cast(URL(string: string))
     }
 }
-#endif
 
 /// URL stores its absoluteString in the database.
 extension URL: DatabaseValueConvertible { }
