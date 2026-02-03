@@ -4,6 +4,12 @@ import GRDB
 
 class EncryptionTests: GRDBTestCase {
     
+#if SWIFT_PACKAGE
+let testBundle = Bundle.module
+#else
+let testBundle = Bundle(for: GRDBTestCase.self)
+#endif
+
     func testDatabaseQueueWithPassphraseToDatabaseQueueWithPassphrase() throws {
         do {
             var config = Configuration()
@@ -707,7 +713,6 @@ class EncryptionTests: GRDBTestCase {
             else { XCTFail("Unknown SQLCipher version"); return }
         
         if cipherMajorVersion >= 4 {
-            let testBundle = Bundle(for: type(of: self))
             let path = testBundle.url(forResource: "db", withExtension: "SQLCipher3")!.path
             var configuration = Configuration()
             configuration.prepareDatabase { db in
@@ -726,6 +731,69 @@ class EncryptionTests: GRDBTestCase {
                 let success = try dbPool.read { try String.fetchOne($0, sql: "SELECT a FROM t") }
                 XCTAssertEqual(success, "success")
             }
+        }
+    }
+
+    func testCipherVersion() throws {
+        try DatabaseQueue().inDatabase { db in
+            _ = try db.cipherVersion
+        }
+    }
+
+    func testCipherFipsStatus() throws {
+        var config = Configuration()
+        config.prepareDatabase { db in
+            try db.usePassphrase("secret")
+        }
+        let dbQueue = try makeDatabaseQueue(configuration: config)
+        try dbQueue.inDatabase { db in
+            XCTAssertEqual("0", try db.cipherFipsStatus)
+        }
+    }
+
+    func testCipherProvider() throws {
+        var config = Configuration()
+        config.prepareDatabase { db in
+            try db.usePassphrase("secret")
+        }
+        let dbQueue = try makeDatabaseQueue(configuration: config)
+        try dbQueue.inDatabase { db in
+            XCTAssertEqual("commoncrypto", try db.cipherProvider)
+        }
+    }
+
+    func testCipherProviderVersion() throws {
+        var config = Configuration()
+        config.prepareDatabase { db in
+            try db.usePassphrase("secret")
+        }
+        let dbQueue = try makeDatabaseQueue(configuration: config)
+        let cipherVersion = try dbQueue.read { try $0.cipherVersion }
+        if "4.10.0".compare(cipherVersion, options: .numeric) == .orderedDescending {
+            throw XCTSkip("cipher_provider_version isn't available until SQLCipher 4.10.0")
+        }
+        try dbQueue.inDatabase { db in
+            XCTAssertNotNil(try db.cipherProviderVersion)
+        }
+    }
+    
+    func test_enableCipherLogging() throws {
+        let dbQueue = try makeDatabaseQueue()
+        let cipherVersion = try dbQueue.read { try $0.cipherVersion }
+        if "4.0.0".compare(cipherVersion, options: .numeric) == .orderedDescending {
+            throw XCTSkip("SQLCipher logging is not available")
+        }
+        try dbQueue.inDatabase { db in
+            try db.enableCipherLogging()
+            try db.enableCipherLogging(logLevel: .error)
+            try db.enableCipherLogging(target: .stdout)
+            
+            let logFilePath = (NSTemporaryDirectory() as NSString).appendingPathComponent(ProcessInfo.processInfo.globallyUniqueString)
+            defer {
+                try? FileManager.default.removeItem(atPath: logFilePath)
+            }
+            try db.enableCipherLogging(target: .file(logFilePath))
+            XCTAssert(FileManager.default.fileExists(atPath: logFilePath))
         }
     }
 }
