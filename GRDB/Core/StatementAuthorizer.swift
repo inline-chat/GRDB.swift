@@ -14,6 +14,8 @@ import GRDBSQLite
 import string_h
 #elseif os(Linux)
 import Glibc
+#elseif os(Android)
+import Android
 #elseif os(macOS) || os(iOS) || os(watchOS) || os(tvOS) || os(visionOS)
 import Darwin
 #elseif os(Windows)

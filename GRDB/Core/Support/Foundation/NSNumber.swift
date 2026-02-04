@@ -1,4 +1,3 @@
-#if !os(Windows)
 import Foundation
 
 private let integerRoundingBehavior = NSDecimalNumberHandler(
@@ -104,4 +103,3 @@ extension NSNumber: DatabaseValueConvertible {
 }
 
 private let posixLocale = Locale(identifier: "en_US_POSIX")
-#endif

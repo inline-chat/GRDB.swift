@@ -758,7 +758,8 @@ let testBundle = Bundle(for: GRDBTestCase.self)
         }
         let dbQueue = try makeDatabaseQueue(configuration: config)
         try dbQueue.inDatabase { db in
-            XCTAssertEqual("commoncrypto", try db.cipherProvider)
+            let provider = try db.cipherProvider
+            XCTAssertTrue(["commoncrypto", "libtomcrypt"].contains(provider), "unrecognized cipherProvider: \(provider ?? "")")
         }
     }
 

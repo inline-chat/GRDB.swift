@@ -12,7 +12,6 @@ import GRDBSQLite
 
 import Foundation
 
-#if !os(Windows)
 /// NSUUID adopts DatabaseValueConvertible
 extension NSUUID: DatabaseValueConvertible {
     /// Returns a BLOB database value containing the uuid bytes.
@@ -52,7 +51,6 @@ extension NSUUID: DatabaseValueConvertible {
         }
     }
 }
-#endif
 
 /// UUID adopts DatabaseValueConvertible
 extension UUID: DatabaseValueConvertible {
