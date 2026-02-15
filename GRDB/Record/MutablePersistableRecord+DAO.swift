@@ -42,6 +42,7 @@ final class DAO<Record: MutablePersistableRecord> {
     func upsertStatement(
         _ db: Database,
         onConflict conflictTargetColumns: [String],
+        updating strategy: UpsertUpdateStrategy,
         doUpdate assignments: ((_ excluded: TableAlias<Record>) -> [ColumnAssignment])?,
         updateCondition: ((
             _ existing: TableAlias<Record>,
@@ -78,20 +79,22 @@ final class DAO<Record: MutablePersistableRecord> {
         sql += " DO UPDATE SET "
         let excluded = TableAlias<Record>(name: "excluded")
         var assignments = assignments?(excluded) ?? []
-        let lowercaseExcludedColumns = Set(primaryKey.columns.map { $0.lowercased() })
-            .union(conflictTargetColumns.map { $0.lowercased() })
-        for column in persistenceContainer.columns {
-            let lowercasedColumn = column.lowercased()
-            if lowercaseExcludedColumns.contains(lowercasedColumn) {
-                // excluded (primary key or conflict target)
-                continue
+        if strategy.contains(.allColumns) {
+            let lowercaseExcludedColumns = Set(primaryKey.columns.map { $0.lowercased() })
+                .union(conflictTargetColumns.map { $0.lowercased() })
+            for column in persistenceContainer.columns {
+                let lowercasedColumn = column.lowercased()
+                if lowercaseExcludedColumns.contains(lowercasedColumn) {
+                    // excluded (primary key or conflict target)
+                    continue
+                }
+                if assignments.contains(where: { $0.columnName.lowercased() == lowercasedColumn }) {
+                    // already updated from the `assignments` argument
+                    continue
+                }
+                // overwrite
+                assignments.append(Column(column).set(to: excluded[column]))
             }
-            if assignments.contains(where: { $0.columnName.lowercased() == lowercasedColumn }) {
-                // already updated from the `assignments` argument
-                continue
-            }
-            // overwrite
-            assignments.append(Column(column).set(to: excluded[column]))
         }
         let context = SQLGenerationContext(db)
         let updateSQL = try assignments

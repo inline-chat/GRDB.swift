@@ -73,55 +73,52 @@ extension MutablePersistableRecord {
     /// let upsertedPlayer = try player.upsertAndFetch(db)
     /// ```
     ///
-    /// With `conflictTarget` and `assignments` arguments, you can further
-    /// control the upsert behavior. Make sure you check
+    /// With the `conflictTarget`, `strategy`, and `assignments` arguments,
+    /// you can further control the upsert behavior. Make sure you check
     /// <https://www.sqlite.org/lang_UPSERT.html> for detailed information.
     ///
     /// The conflict target are the columns of the uniqueness constraint
     /// (primary key or unique index) that triggers the upsert. If empty, all
     /// uniqueness constraint are considered.
     ///
-    /// The assignments describe how to update columns in case of violation of
-    /// a uniqueness constraint. In the next example, we insert the new
-    /// vocabulary word "jovial" if that word is not already in the dictionary.
-    /// If the word is already in the dictionary, it increments the counter,
-    /// does not overwrite the tainted flag, and overwrites the
-    /// remaining columns:
+    /// The strategy controls which columns are updated in case of
+    /// uniqueness constraint violation: all columns unless specified (the
+    /// default), or only the specified columns.
+    ///
+    /// For example, compare:
     ///
     /// ```swift
-    /// // CREATE TABLE vocabulary(
-    /// //   word TEXT PRIMARY KEY,
-    /// //   kind TEXT NOT NULL,
-    /// //   isTainted BOOLEAN DEFAULT 0,
-    /// //   count INT DEFAULT 1))
-    /// struct Vocabulary: Encodable, MutablePersistableRecord {
-    ///     var word: String
-    ///     var kind: String
-    ///     var isTainted: Bool
+    /// // In case of conflict, updates all columns, including columns added
+    /// // in a future migration.
+    /// let upserted = try player.upsertAndFetch(db)
+    ///
+    /// // In case of conflict, updates all columns, including future ones,
+    /// // but 'score'.
+    /// let upserted = try player.upsertAndFetch(db) { _ in
+    ///     [Column("score").noOverwrite]
     /// }
     ///
-    /// // INSERT INTO vocabulary(word, kind, isTainted)
-    /// // VALUES('jovial', 'adjective', 0)
-    /// // ON CONFLICT(word) DO UPDATE SET \
-    /// //   count = count + 1,
-    /// //   kind = excluded.kind
-    /// // RETURNING *
-    /// var vocabulary = Vocabulary(word: "jovial", kind: "adjective", isTainted: false)
-    /// let upserted = try vocabulary.upsertAndFetch(
-    ///     db,
-    ///     onConflict: ["word"],
-    ///     doUpdate: { _ in
-    ///         [Column("count") += 1,
-    ///          Column("isTainted").noOverwrite]
-    ///     })
+    /// // In case of conflict, do not update any column.
+    /// let upserted = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified)
+    ///
+    /// // In case of conflict, only update 'name'.
+    /// let upserted = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified) { excluded in
+    ///     [Column("name").set(to: excluded[Column("name")])]
+    /// }
     /// ```
     ///
     /// - parameter db: A database connection.
     /// - parameter conflictTarget: The conflict target.
+    /// - parameter strategy: The default strategy, `.allColumns`, updates
+    ///   all columns in case of conflict, unless specified otherwise in the
+    ///   `assignments` parameter. Use `.noColumnUnlessSpecified` to only
+    ///   update the columns assigned in the `assignments` parameter.
     /// - parameter assignments: An optional function that returns an array of
     ///   ``ColumnAssignment``. In case of violation of a uniqueness
-    ///   constraints, these assignments are performed, and remaining columns
-    ///   are overwritten by inserted values.
+    ///   constraint, these assignments are performed, and remaining columns
+    ///   are overwritten by inserted values, or not, depending on the
+    ///   chosen `strategy`. To use the value that would have been inserted
+    ///   had the constraint not failed, use the `excluded` parameter.
     /// - returns: The upserted record.
     /// - throws: A ``DatabaseError`` whenever an SQLite error occurs, or any
     ///   error thrown by the persistence callbacks defined by the record type.
@@ -129,26 +126,36 @@ extension MutablePersistableRecord {
     public mutating func upsertAndFetch(
         _ db: Database,
         onConflict conflictTarget: [String] = [],
+        updating strategy: UpsertUpdateStrategy = .allColumns,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])? = nil)
     throws -> Self
     where Self: FetchableRecord
     {
-        try upsertAndFetch(db, as: Self.self, onConflict: conflictTarget, doUpdate: assignments)
+        try upsertAndFetch(
+            db, as: Self.self, onConflict: conflictTarget,
+            updating: strategy, doUpdate: assignments)
     }
     
     /// Executes an `INSERT ON CONFLICT DO UPDATE RETURNING` statement, and
     /// returns the upserted record.
     ///
-    /// See `upsertAndFetch(_:onConflict:doUpdate:)` for more information about
-    /// the `conflictTarget` and `assignments` parameters.
+    /// See ``upsertAndFetch(_:onConflict:updating:doUpdate:)`` for more
+    /// information about the `conflictTarget`, `strategy`, and
+    /// `assignments` parameters.
     ///
     /// - parameter db: A database connection.
     /// - parameter returnedType: The type of the returned record.
     /// - parameter conflictTarget: The conflict target.
+    /// - parameter strategy: The default strategy, `.allColumns`, updates
+    ///   all columns in case of conflict, unless specified otherwise in the
+    ///   `assignments` parameter. Use `.noColumnUnlessSpecified` to only
+    ///   update the columns assigned in the `assignments` parameter.
     /// - parameter assignments: An optional function that returns an array of
     ///   ``ColumnAssignment``. In case of violation of a uniqueness
-    ///   constraints, these assignments are performed, and remaining columns
-    ///   are overwritten by inserted values.
+    ///   constraint, these assignments are performed, and remaining columns
+    ///   are overwritten by inserted values, or not, depending on the
+    ///   chosen `strategy`. To use the value that would have been inserted
+    ///   had the constraint not failed, use the `excluded` parameter.
     /// - returns: A record of type `returnedType`.
     /// - throws: A ``DatabaseError`` whenever an SQLite error occurs, or any
     ///   error thrown by the persistence callbacks defined by the record type.
@@ -157,6 +164,7 @@ extension MutablePersistableRecord {
         _ db: Database,
         as returnedType: T.Type,
         onConflict conflictTarget: [String] = [],
+        updating strategy: UpsertUpdateStrategy = .allColumns,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])? = nil)
     throws -> T
     {
@@ -166,7 +174,7 @@ extension MutablePersistableRecord {
         try aroundSave(db) {
             success = try upsertAndFetchWithCallbacks(
                 db, onConflict: conflictTarget,
-                doUpdate: assignments,
+                updating: strategy, doUpdate: assignments,
                 selection: T.databaseSelection,
                 decode: { try T(row: $0) })
             return PersistenceSuccess(success!.inserted)
@@ -250,55 +258,52 @@ extension MutablePersistableRecord {
     /// let upsertedPlayer = try player.upsertAndFetch(db)
     /// ```
     ///
-    /// With `conflictTarget` and `assignments` arguments, you can further
-    /// control the upsert behavior. Make sure you check
+    /// With the `conflictTarget`, `strategy`, and `assignments` arguments,
+    /// you can further control the upsert behavior. Make sure you check
     /// <https://www.sqlite.org/lang_UPSERT.html> for detailed information.
     ///
     /// The conflict target are the columns of the uniqueness constraint
     /// (primary key or unique index) that triggers the upsert. If empty, all
     /// uniqueness constraint are considered.
     ///
-    /// The assignments describe how to update columns in case of violation of
-    /// a uniqueness constraint. In the next example, we insert the new
-    /// vocabulary word "jovial" if that word is not already in the dictionary.
-    /// If the word is already in the dictionary, it increments the counter,
-    /// does not overwrite the tainted flag, and overwrites the
-    /// remaining columns:
+    /// The strategy controls which columns are updated in case of
+    /// uniqueness constraint violation: all columns unless specified (the
+    /// default), or only the specified columns.
+    ///
+    /// For example, compare:
     ///
     /// ```swift
-    /// // CREATE TABLE vocabulary(
-    /// //   word TEXT PRIMARY KEY,
-    /// //   kind TEXT NOT NULL,
-    /// //   isTainted BOOLEAN DEFAULT 0,
-    /// //   count INT DEFAULT 1))
-    /// struct Vocabulary: Encodable, MutablePersistableRecord {
-    ///     var word: String
-    ///     var kind: String
-    ///     var isTainted: Bool
+    /// // In case of conflict, updates all columns, including columns added
+    /// // in a future migration.
+    /// let upserted = try player.upsertAndFetch(db)
+    ///
+    /// // In case of conflict, updates all columns, including future ones,
+    /// // but 'score'.
+    /// let upserted = try player.upsertAndFetch(db) { _ in
+    ///     [Column("score").noOverwrite]
     /// }
     ///
-    /// // INSERT INTO vocabulary(word, kind, isTainted)
-    /// // VALUES('jovial', 'adjective', 0)
-    /// // ON CONFLICT(word) DO UPDATE SET \
-    /// //   count = count + 1,
-    /// //   kind = excluded.kind
-    /// // RETURNING *
-    /// var vocabulary = Vocabulary(word: "jovial", kind: "adjective", isTainted: false)
-    /// let upserted = try vocabulary.upsertAndFetch(
-    ///     db,
-    ///     onConflict: ["word"],
-    ///     doUpdate: { _ in
-    ///         [Column("count") += 1,
-    ///          Column("isTainted").noOverwrite]
-    ///     })
+    /// // In case of conflict, do not update any column.
+    /// let upserted = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified)
+    ///
+    /// // In case of conflict, only update 'name'.
+    /// let upserted = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified) { excluded in
+    ///     [Column("name").set(to: excluded[Column("name")])]
+    /// }
     /// ```
     ///
     /// - parameter db: A database connection.
     /// - parameter conflictTarget: The conflict target.
+    /// - parameter strategy: The default strategy, `.allColumns`, updates
+    ///   all columns in case of conflict, unless specified otherwise in the
+    ///   `assignments` parameter. Use `.noColumnUnlessSpecified` to only
+    ///   update the columns assigned in the `assignments` parameter.
     /// - parameter assignments: An optional function that returns an array of
     ///   ``ColumnAssignment``. In case of violation of a uniqueness
-    ///   constraints, these assignments are performed, and remaining columns
-    ///   are overwritten by inserted values.
+    ///   constraint, these assignments are performed, and remaining columns
+    ///   are overwritten by inserted values, or not, depending on the
+    ///   chosen `strategy`. To use the value that would have been inserted
+    ///   had the constraint not failed, use the `excluded` parameter.
     /// - returns: The upserted record.
     /// - throws: A ``DatabaseError`` whenever an SQLite error occurs, or any
     ///   error thrown by the persistence callbacks defined by the record type.
@@ -307,26 +312,36 @@ extension MutablePersistableRecord {
     public mutating func upsertAndFetch(
         _ db: Database,
         onConflict conflictTarget: [String] = [],
+        updating strategy: UpsertUpdateStrategy = .allColumns,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])? = nil)
     throws -> Self
     where Self: FetchableRecord
     {
-        try upsertAndFetch(db, as: Self.self, onConflict: conflictTarget, doUpdate: assignments)
+        try upsertAndFetch(
+            db, as: Self.self, onConflict: conflictTarget,
+            updating: strategy, doUpdate: assignments)
     }
     
     /// Executes an `INSERT ON CONFLICT DO UPDATE RETURNING` statement, and
     /// returns the upserted record.
     ///
-    /// See ``upsertAndFetch(_:onConflict:doUpdate:)`` for more information
-    /// about the `conflictTarget` and `assignments` parameters.
+    /// See ``upsertAndFetch(_:onConflict:updating:doUpdate:)`` for more
+    /// information about the `conflictTarget`, `strategy`, and
+    /// `assignments` parameters.
     ///
     /// - parameter db: A database connection.
     /// - parameter returnedType: The type of the returned record.
     /// - parameter conflictTarget: The conflict target.
+    /// - parameter strategy: The default strategy, `.allColumns`, updates
+    ///   all columns in case of conflict, unless specified otherwise in the
+    ///   `assignments` parameter. Use `.noColumnUnlessSpecified` to only
+    ///   update the columns assigned in the `assignments` parameter.
     /// - parameter assignments: An optional function that returns an array of
     ///   ``ColumnAssignment``. In case of violation of a uniqueness
-    ///   constraints, these assignments are performed, and remaining columns
-    ///   are overwritten by inserted values.
+    ///   constraint, these assignments are performed, and remaining columns
+    ///   are overwritten by inserted values, or not, depending on the
+    ///   chosen `strategy`. To use the value that would have been inserted
+    ///   had the constraint not failed, use the `excluded` parameter.
     /// - returns: A record of type `returnedType`.
     /// - throws: A ``DatabaseError`` whenever an SQLite error occurs, or any
     ///   error thrown by the persistence callbacks defined by the record type.
@@ -336,6 +351,7 @@ extension MutablePersistableRecord {
         _ db: Database,
         as returnedType: T.Type,
         onConflict conflictTarget: [String] = [],
+        updating strategy: UpsertUpdateStrategy = .allColumns,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])? = nil)
     throws -> T
     {
@@ -345,7 +361,7 @@ extension MutablePersistableRecord {
         try aroundSave(db) {
             success = try upsertAndFetchWithCallbacks(
                 db, onConflict: conflictTarget,
-                doUpdate: assignments,
+                updating: strategy, doUpdate: assignments,
                 selection: T.databaseSelection,
                 decode: { try T(row: $0) })
             return PersistenceSuccess(success!.inserted)
@@ -369,6 +385,7 @@ extension MutablePersistableRecord {
     {
         let (inserted, _) = try upsertAndFetchWithCallbacks(
             db, onConflict: [],
+            updating: .allColumns,
             doUpdate: nil,
             selection: [],
             decode: { _ in /* Nothing to decode */ })
@@ -379,6 +396,7 @@ extension MutablePersistableRecord {
     mutating func upsertAndFetchWithCallbacks<T>(
         _ db: Database,
         onConflict conflictTarget: [String],
+        updating strategy: UpsertUpdateStrategy,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])?,
         selection: [any SQLSelectable],
         decode: (Row) throws -> T)
@@ -390,7 +408,7 @@ extension MutablePersistableRecord {
         try aroundInsert(db) {
             success = try upsertAndFetchWithoutCallbacks(
                 db, onConflict: conflictTarget,
-                doUpdate: assignments,
+                updating: strategy, doUpdate: assignments,
                 selection: selection,
                 decode: decode)
             return success!.inserted
@@ -409,6 +427,7 @@ extension MutablePersistableRecord {
     func upsertAndFetchWithoutCallbacks<T>(
         _ db: Database,
         onConflict conflictTarget: [String],
+        updating strategy: UpsertUpdateStrategy,
         doUpdate assignments: ((_ excluded: TableAlias<Self>) -> [ColumnAssignment])?,
         selection: [any SQLSelectable],
         decode: (Row) throws -> T)
@@ -419,8 +438,8 @@ extension MutablePersistableRecord {
         
         let dao = try DAO(db, self)
         let statement = try dao.upsertStatement(
-            db,
-            onConflict: conflictTarget,
+            db, onConflict: conflictTarget,
+            updating: strategy,
             doUpdate: assignments,
             updateCondition: nil,
             returning: selection)

@@ -2210,7 +2210,7 @@ For more information about batch updates, see [Update Requests](#update-requests
     try player.upsert(db)
     ```
 
-- `upsertAndFetch(_:onConflict:doUpdate:)` (requires [FetchableRecord] conformance)
+- `upsertAndFetch(_:onConflict:updating:doUpdate:)` (requires [FetchableRecord] conformance)
 
     Inserts or updates a record, and returns the upserted record.
     
@@ -2220,7 +2220,7 @@ For more information about batch updates, see [Update Requests](#update-requests
         
         If empty (the default), all uniqueness constraint are considered.
     
-    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Other columns are overwritten with the inserted values.
+    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Depending on the `options` parameter, other columns are overwritten with the inserted values, or not.
         
         By default, all inserted columns but the primary key and the conflict target are overwritten.
     
@@ -2268,9 +2268,9 @@ For more information about batch updates, see [Update Requests](#update-requests
     })
     ```
 
-- `upsertAndFetch(_:as:onConflict:doUpdate:)` (does not require [FetchableRecord] conformance)
+- `upsertAndFetch(_:as:onConflict:updating:doUpdate:)` (does not require [FetchableRecord] conformance)
 
-    This method is identical to `upsertAndFetch(_:onConflict:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
+    This method is identical to `upsertAndFetch(_:onConflict:updating:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
 
 ### Persistence Methods and the `RETURNING` clause
 
