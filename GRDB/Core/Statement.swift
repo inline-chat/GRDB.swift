@@ -4,8 +4,8 @@ import SQLCipher
 #elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
 #elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
-// #elseif SomeTrait
-// import ...
+#elseif SQLCipher
+import SQLCipher
 #else // Default SPM trait must be the default. It impossible to detect from Xcode.
 import GRDBSQLite
 #endif
@@ -60,7 +60,7 @@ public final class Statement {
     
     /// The column names, ordered from left to right.
     public lazy var columnNames: [String] = {
-        // swiftlint:disable:next redundant_self_in_closure
+        // swiftlint:disable:next redundant_self
         let sqliteStatement = self.sqliteStatement
         return (0..<CInt(columnCount)).map { String(cString: sqlite3_column_name(sqliteStatement, $0)) }
     }()

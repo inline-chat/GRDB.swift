@@ -1,7 +1,6 @@
 import XCTest
 import GRDB
 
-#warning("TODO: document the caveat that didInsert(with:) is unreliable due to last insert rowid not set by triggers: https://sqlite.org/c3ref/last_insert_rowid.html. See also https://sqlite.org/forum/forumpost/fb1c3b4a13")
 private struct Player: Codable,
                        Equatable,
                        Identifiable,

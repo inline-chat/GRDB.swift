@@ -345,7 +345,7 @@ extension ValueObservation {
     /// - parameter reader: A DatabaseReader.
     /// - parameter scheduler: A ValueObservationScheduler. By default,
     ///   fresh values are dispatched on the cooperative thread pool.
-    /// - parameter bufferingPolicy: see the documntation
+    /// - parameter bufferingPolicy: see the documentation
     ///   of `AsyncThrowingStream`.
     public func values(
         in reader: any DatabaseReader,

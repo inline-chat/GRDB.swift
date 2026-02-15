@@ -15,7 +15,7 @@
     <a href="https://github.com/groue/GRDB.swift/actions/workflows/CI.yml"><img alt="CI Status" src="https://github.com/groue/GRDB.swift/actions/workflows/CI.yml/badge.svg?branch=master"></a>
 </p>
 
-**Latest release**: December 13, 2025 • [version 7.9.0](https://github.com/groue/GRDB.swift/tree/v7.9.0) • [CHANGELOG](CHANGELOG.md) • [Migrating From GRDB 6 to GRDB 7](Documentation/GRDB7MigrationGuide.md)
+**Latest release**: February 15, 2026 • [version 7.10.0](https://github.com/groue/GRDB.swift/tree/v7.10.0) • [CHANGELOG](CHANGELOG.md) • [Migrating From GRDB 6 to GRDB 7](Documentation/GRDB7MigrationGuide.md)
 
 **Requirements**: iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 7.0+ &bull; SQLite 3.20.0+ &bull; Swift 6.1+ / Xcode 16.3+
 
@@ -100,7 +100,7 @@ try dbQueue.write { db in
 }
 
 try dbQueue.read { db in
-    let player = try Player.find(db, id: "1"))
+    let player = try Player.find(db, id: "1")
     
     let bestPlayers = try Player
         .order(\.score.desc)
@@ -199,7 +199,7 @@ try dbQueue.write { db in
     
     // Update a record
     player.score += 10
-    try score.update(db)
+    try player.update(db)
     
     try player.updateChanges { $0.score += 10 }
     
@@ -1652,7 +1652,7 @@ Records
 
 ```swift
 try dbQueue.write { db in
-    if var place = try Player.fetchOne(db, id: 1) {
+    if var player = try Player.fetchOne(db, id: 1) {
         player.score += 10
         try player.update(db)
     }
@@ -2210,7 +2210,7 @@ For more information about batch updates, see [Update Requests](#update-requests
     try player.upsert(db)
     ```
 
-- `upsertAndFetch(_:onConflict:doUpdate:)` (requires [FetchableRecord] conformance)
+- `upsertAndFetch(_:onConflict:updating:doUpdate:)` (requires [FetchableRecord] conformance)
 
     Inserts or updates a record, and returns the upserted record.
     
@@ -2220,7 +2220,7 @@ For more information about batch updates, see [Update Requests](#update-requests
         
         If empty (the default), all uniqueness constraint are considered.
     
-    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Other columns are overwritten with the inserted values.
+    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Depending on the `options` parameter, other columns are overwritten with the inserted values, or not.
         
         By default, all inserted columns but the primary key and the conflict target are overwritten.
     
@@ -2268,9 +2268,9 @@ For more information about batch updates, see [Update Requests](#update-requests
     })
     ```
 
-- `upsertAndFetch(_:as:onConflict:doUpdate:)` (does not require [FetchableRecord] conformance)
+- `upsertAndFetch(_:as:onConflict:updating:doUpdate:)` (does not require [FetchableRecord] conformance)
 
-    This method is identical to `upsertAndFetch(_:onConflict:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
+    This method is identical to `upsertAndFetch(_:onConflict:updating:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
 
 ### Persistence Methods and the `RETURNING` clause
 
@@ -4589,7 +4589,9 @@ Encryption
 
 **GRDB can encrypt your database with [SQLCipher](http://sqlcipher.net) v3.4+.**
 
-Use [CocoaPods](http://cocoapods.org/), and specify in your `Podfile`:
+To use SQLCipher with the [Swift Package Manager](https://swift.org/package-manager/), you must fork GRDB, and modify `Package.swift`. Instructions are in the file itself, in comments that contain "GRDB+SQLCipher".
+
+To use SQLCipher with [CocoaPods](http://cocoapods.org/), specify in your `Podfile`:
 
 ```ruby
 # GRDB with SQLCipher 4

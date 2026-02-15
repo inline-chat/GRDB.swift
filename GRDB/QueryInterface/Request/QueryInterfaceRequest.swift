@@ -1872,6 +1872,18 @@ public struct ColumnAssignment {
     }
 }
 
+/// A strategy for updating database rows in case of upsert conflict.
+public struct UpsertUpdateStrategy: OptionSet, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+    
+    /// Only the specified columns are updated in the existing row.
+    public static let noColumnUnlessSpecified = Self([])
+    
+    /// All columns are updated in the existing row, unless specified otherwise.
+    public static let allColumns = Self(rawValue: 1 << 0)
+}
+
 extension ColumnExpression {
     /// Returns an assignment of this column to an SQL expression.
     ///

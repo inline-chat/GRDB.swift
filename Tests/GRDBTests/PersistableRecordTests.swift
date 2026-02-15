@@ -2324,7 +2324,7 @@ extension PersistableRecordTests {
         }
     }
 
-    func test_upsertAndFetch_do_update_set_where() throws {
+    func test_upsertAndFetch_do_update_set_where_with_default_strategy() throws {
 #if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("UPSERT is not available")
@@ -2341,10 +2341,10 @@ extension PersistableRecordTests {
                 try db.execute(sql: """
                     CREATE TABLE vocabulary(
                       word TEXT PRIMARY KEY,
-                      kind TEXT,
+                      kind TEXT NOT NULL,
                       isTainted BOOLEAN DEFAULT 0,
                       count INT DEFAULT 1);
-                    INSERT INTO vocabulary(word, isTainted) VALUES('jovial', 1);
+                    INSERT INTO vocabulary(word, kind, isTainted) VALUES('jovial', 'name', 1);
                     """)
                 
                 struct Vocabulary: Decodable, PersistableRecord, FetchableRecord {
@@ -2359,6 +2359,33 @@ extension PersistableRecordTests {
                         container["kind"] = kind
                         container["isTainted"] = isTainted
                     }
+                }
+                
+                // No column specified, no unique index specified
+                do {
+                    let vocabulary = Vocabulary(word: "jovial", kind: "ambiguous", isTainted: true)
+                    let upserted = try vocabulary.upsertAndFetch(db)
+                    
+                    // Test SQL
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','ambiguous',1) \
+                        ON CONFLICT \
+                        DO UPDATE SET "kind" = "excluded"."kind", "isTainted" = "excluded"."isTainted" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "ambiguous", "isTainted": 1, "count": 1],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "ambiguous")
+                    XCTAssertEqual(upserted.isTainted, true)
+                    XCTAssertEqual(upserted.count, 1)
                 }
                 
                 // One column with specific assignment (count)
@@ -2444,6 +2471,152 @@ extension PersistableRecordTests {
                 let phonebook = Phonebook(name: "Alice", phonenumber: "704-555-1212")
                 let upserted = try phonebook.upsertAndFetch(
                     db, onConflict: ["name"],
+                    doUpdate: { excluded in
+                        [Column("phonenumber").set(to: excluded["phonenumber"])]
+                    })
+                
+                // Test SQL
+                XCTAssertEqual(lastSQLQuery, """
+                    INSERT INTO "phonebook" ("name", "phonenumber") \
+                    VALUES ('Alice','704-555-1212') \
+                    ON CONFLICT("name") DO UPDATE SET "phonenumber" = "excluded"."phonenumber" \
+                    RETURNING *, "rowid"
+                    """)
+                
+                // Test database state
+                let rows = try Row.fetchAll(db, sql: "SELECT * FROM phonebook")
+                XCTAssertEqual(rows, [
+                    ["name": "Alice", "phonenumber": "704-555-1212"],
+                ])
+                
+                // Test upserted record
+                XCTAssertEqual(upserted.name, "Alice")
+                XCTAssertEqual(upserted.phonenumber, "704-555-1212")
+            }
+        }
+    }
+    
+    func test_upsertAndFetch_do_update_set_where_with_noColumnUnlessSpecified_strategy() throws {
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
+        guard Database.sqliteLibVersionNumber >= 3035000 else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#else
+        guard #available(iOS 15, macOS 12, tvOS 15, watchOS 8, *) else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#endif
+        
+        try makeDatabaseQueue().write { db in
+            // Test exemples of https://www.sqlite.org/lang_UPSERT.html
+            do {
+                try db.execute(sql: """
+                    CREATE TABLE vocabulary(
+                      word TEXT PRIMARY KEY,
+                      kind TEXT NOT NULL,
+                      isTainted BOOLEAN DEFAULT 0,
+                      count INT DEFAULT 1);
+                    INSERT INTO vocabulary(word, kind, isTainted) VALUES('jovial', 'name', 1);
+                    """)
+                
+                struct Vocabulary: Decodable, PersistableRecord, FetchableRecord {
+                    var word: String
+                    var kind: String
+                    var isTainted: Bool
+                    var count: Int?
+                    
+                    func encode(to container: inout PersistenceContainer) {
+                        // Don't encode count
+                        container["word"] = word
+                        container["kind"] = kind
+                        container["isTainted"] = isTainted
+                    }
+                }
+                
+                // One column with specific assignment (count)
+                // One column with no assignment (isTainted)
+                // One column with default overwrite assignment (kind)
+                do {
+                    let vocabulary = Vocabulary(word: "jovial", kind: "adjective", isTainted: false)
+                    let upserted = try vocabulary.upsertAndFetch(
+                        db, onConflict: ["word"],
+                        updating: .noColumnUnlessSpecified,
+                        doUpdate: { excluded in
+                            [Column("count") += 1,                     // increment count
+                             Column("kind").set(to: excluded["kind"])] // overwrite kind
+                        })
+                    
+                    // Test SQL
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','adjective',0) \
+                        ON CONFLICT("word") \
+                        DO UPDATE SET "count" = "count" + 1, "kind" = "excluded"."kind" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "adjective", "isTainted": 1, "count": 2],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "adjective")
+                    XCTAssertEqual(upserted.isTainted, true)   // Not overwritten
+                    XCTAssertEqual(upserted.count, 2)          // incremented
+                }
+                
+                // All columns with no assignment: make sure we return something
+                do {
+                    let vocabulary = Vocabulary(word: "jovial", kind: "ignored", isTainted: false)
+                    let upserted = try vocabulary.upsertAndFetch(
+                        db, onConflict: ["word"],
+                        updating: .noColumnUnlessSpecified,
+                        doUpdate: { _ in
+                            []
+                        })
+                    
+                    // Test SQL (the DO UPDATE clause is not empty, so that the
+                    // RETURNING clause could return something).
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','ignored',0) \
+                        ON CONFLICT("word") \
+                        DO UPDATE SET "word" = "word" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "adjective", "isTainted": 1, "count": 2],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "adjective")
+                    XCTAssertEqual(upserted.isTainted, true)
+                    XCTAssertEqual(upserted.count, 2)
+                }
+            }
+            
+            do {
+                try db.execute(sql: """
+                    CREATE TABLE phonebook(name TEXT PRIMARY KEY, phonenumber TEXT);
+                    INSERT INTO phonebook(name,phonenumber) VALUES('Alice','ignored');
+                    """)
+                
+                struct Phonebook: Codable, PersistableRecord, FetchableRecord {
+                    var name: String
+                    var phonenumber: String
+                }
+                
+                let phonebook = Phonebook(name: "Alice", phonenumber: "704-555-1212")
+                let upserted = try phonebook.upsertAndFetch(
+                    db, onConflict: ["name"],
+                    updating: .noColumnUnlessSpecified,
                     doUpdate: { excluded in
                         [Column("phonenumber").set(to: excluded["phonenumber"])]
                     })
@@ -2620,6 +2793,94 @@ extension PersistableRecordTests {
                 XCTAssertEqual(partialPlayer.callbacks.aroundDeleteEnterCount, 0)
                 XCTAssertEqual(partialPlayer.callbacks.aroundDeleteExitCount, 0)
                 XCTAssertEqual(partialPlayer.callbacks.didDeleteCount, 0)
+            }
+        }
+    }
+    
+    func test_UpsertUpdateStrategy_documentation() throws {
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
+        guard Database.sqliteLibVersionNumber >= 3035000 else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#else
+        guard #available(iOS 15, macOS 12, tvOS 15, watchOS 8, *) else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#endif
+        
+        struct Player: Codable, FetchableRecord, PersistableRecord {
+            static let databaseTableName = "other_player"
+            var id: Int64 // The primary key
+            var name: String
+            var score: Int
+            var bestScore: Int
+        }
+        
+        try makeDatabaseQueue().write { db in
+            try db.create(table: "other_player") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("name", .text).notNull()
+                t.column("score", .integer).notNull()
+                t.column("bestScore", .integer).notNull()
+            }
+            try Player(id: 1, name: "Arthur", score: 100, bestScore: 200).insert(db)
+            
+            try db.inSavepoint {
+                let player = Player(id: 1, name: "Barbara", score: 200, bestScore: 0)
+                let upsertedPlayer = try player.upsertAndFetch(db, updating: .allColumns)
+                XCTAssertEqual(upsertedPlayer.name, "Barbara")
+                XCTAssertEqual(upsertedPlayer.score, 200)
+                XCTAssertEqual(upsertedPlayer.bestScore, 0)
+                return .rollback
+            }
+            
+            try db.inSavepoint {
+                let player = Player(id: 1, name: "Barbara", score: 200, bestScore: 0)
+                let upsertedPlayer = try player.upsertAndFetch(db, updating: .allColumns) { excluded in
+                    let bestScore = Column("bestScore")
+                    return [
+                        bestScore.set(to: max(bestScore, excluded[bestScore])),
+                    ]
+                }
+                XCTAssertEqual(upsertedPlayer.name, "Barbara")
+                XCTAssertEqual(upsertedPlayer.score, 200)
+                XCTAssertEqual(upsertedPlayer.bestScore, 200)
+                return .rollback
+            }
+            
+            try db.inSavepoint {
+                let player = Player(id: 1, name: "Barbara", score: 200, bestScore: 1000)
+                let upsertedPlayer = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified)
+                XCTAssertEqual(upsertedPlayer.name, "Arthur")
+                XCTAssertEqual(upsertedPlayer.score, 100)
+                XCTAssertEqual(upsertedPlayer.bestScore, 200)
+                return .rollback
+            }
+            
+            try db.inSavepoint {
+                let player = Player(id: 1, name: "Barbara", score: 200, bestScore: 1000)
+                let upsertedPlayer = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified) { excluded in
+                    let name = Column("name")
+                    return [name.set(to: excluded[name])]
+                }
+                XCTAssertEqual(upsertedPlayer.name, "Barbara")
+                XCTAssertEqual(upsertedPlayer.score, 100)
+                XCTAssertEqual(upsertedPlayer.bestScore, 200)
+                return .rollback
+            }
+
+            try db.inSavepoint {
+                let player = Player(id: 1, name: "Barbara", score: 200, bestScore: 1000)
+                let upsertedPlayer = try player.upsertAndFetch(db, updating: .noColumnUnlessSpecified) { excluded in
+                    let bestScore = Column("bestScore")
+                    return [
+                        bestScore.set(to: max(bestScore, excluded[bestScore])),
+                    ]
+                }
+                XCTAssertEqual(upsertedPlayer.name, "Arthur")
+                XCTAssertEqual(upsertedPlayer.score, 100)
+                XCTAssertEqual(upsertedPlayer.bestScore, 1000)
+                return .rollback
             }
         }
     }

@@ -877,10 +877,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
             XCTAssertEqual(db.configuration.label, nil)
             XCTAssertEqual(db.description, "GRDB.DatabasePool.writer")
             
+#if canImport(Darwin)
             // This test CAN break in future releases: the dispatch queue labels
             // are documented to be a debug-only tool.
             let label = String(utf8String: __dispatch_queue_get_label(nil))
             XCTAssertEqual(label, "GRDB.DatabasePool.writer")
+#endif
         }
         
         let s1 = DispatchSemaphore(value: 0)
@@ -890,10 +892,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
                 XCTAssertEqual(db.configuration.label, nil)
                 XCTAssertEqual(db.description, "GRDB.DatabasePool.reader.1")
                 
+#if canImport(Darwin)
                 // This test CAN break in future releases: the dispatch queue labels
                 // are documented to be a debug-only tool.
                 let label = String(utf8String: __dispatch_queue_get_label(nil))
                 XCTAssertEqual(label, "GRDB.DatabasePool.reader.1")
+#endif
                 
                 _ = s1.signal()
                 _ = s2.wait(timeout: .distantFuture)
@@ -906,10 +910,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
                 XCTAssertEqual(db.configuration.label, nil)
                 XCTAssertEqual(db.description, "GRDB.DatabasePool.reader.2")
                 
+#if canImport(Darwin)
                 // This test CAN break in future releases: the dispatch queue labels
                 // are documented to be a debug-only tool.
                 let label = String(utf8String: __dispatch_queue_get_label(nil))
                 XCTAssertEqual(label, "GRDB.DatabasePool.reader.2")
+#endif
             }
         }
         let blocks = [block1, block2]
@@ -925,10 +931,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
             XCTAssertEqual(db.configuration.label, "Toreador")
             XCTAssertEqual(db.description, "Toreador.writer")
             
+#if canImport(Darwin)
             // This test CAN break in future releases: the dispatch queue labels
             // are documented to be a debug-only tool.
             let label = String(utf8String: __dispatch_queue_get_label(nil))
             XCTAssertEqual(label, "Toreador.writer")
+#endif
         }
         
         let s1 = DispatchSemaphore(value: 0)
@@ -938,10 +946,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
                 XCTAssertEqual(db.configuration.label, "Toreador")
                 XCTAssertEqual(db.description, "Toreador.reader.1")
                 
+#if canImport(Darwin)
                 // This test CAN break in future releases: the dispatch queue labels
                 // are documented to be a debug-only tool.
                 let label = String(utf8String: __dispatch_queue_get_label(nil))
                 XCTAssertEqual(label, "Toreador.reader.1")
+#endif
                 
                 _ = s1.signal()
                 _ = s2.wait(timeout: .distantFuture)
@@ -954,10 +964,12 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
                 XCTAssertEqual(db.configuration.label, "Toreador")
                 XCTAssertEqual(db.description, "Toreador.reader.2")
                 
+#if canImport(Darwin)
                 // This test CAN break in future releases: the dispatch queue labels
                 // are documented to be a debug-only tool.
                 let label = String(utf8String: __dispatch_queue_get_label(nil))
                 XCTAssertEqual(label, "Toreador.reader.2")
+#endif
             }
         }
         let blocks = [block1, block2]
@@ -1037,6 +1049,9 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
     }
 
     func testQoS() throws {
+#if !canImport(Darwin)
+        throw XCTSkip("__dispatch_get_global_queue unavailable")
+#else
         func test(qos: DispatchQoS) throws {
             // https://forums.swift.org/t/what-is-the-default-target-queue-for-a-serial-queue/18094/5
             //
@@ -1072,6 +1087,7 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
         
         try test(qos: .background)
         try test(qos: .userInitiated)
+#endif
     }
     
     // MARK: - AsyncConcurrentRead
@@ -1254,6 +1270,9 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
     // MARK: - Concurrent opening
     
     func testConcurrentOpening() throws {
+#if !canImport(Darwin)
+        throw XCTSkip("NSFileCoordinator unavailable")
+#else
         for _ in 0..<50 {
             let dbDirectoryName = "DatabasePoolConcurrencyTests-\(ProcessInfo.processInfo.globallyUniqueString)"
             let directoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
@@ -1277,6 +1296,7 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
                 XCTAssert(poolError ?? coordinatorError == nil)
             }
         }
+#endif
     }
     
     // MARK: - NSFileCoordinator sample code tests
@@ -1284,6 +1304,9 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
     // Test for sample code in Documentation.docc/DatabaseSharing.md.
     // This test passes if this method compiles
     private func openSharedDatabase(at databaseURL: URL) throws -> DatabasePool {
+#if !canImport(Darwin)
+        throw XCTSkip("NSFileCoordinator unavailable")
+#else
         let coordinator = NSFileCoordinator(filePresenter: nil)
         var coordinatorError: NSError?
         var dbPool: DatabasePool?
@@ -1299,6 +1322,7 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
             throw error
         }
         return dbPool!
+#endif
     }
     
     // Test for sample code in Documentation.docc/DatabaseSharing.md.
@@ -1313,6 +1337,9 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
     // Test for sample code in Documentation.docc/DatabaseSharing.md.
     // This test passes if this method compiles
     private func openSharedReadOnlyDatabase(at databaseURL: URL) throws -> DatabasePool? {
+#if !canImport(Darwin)
+        throw XCTSkip("NSFileCoordinator unavailable")
+#else
         let coordinator = NSFileCoordinator(filePresenter: nil)
         var coordinatorError: NSError?
         var dbPool: DatabasePool?
@@ -1328,6 +1355,7 @@ class DatabasePoolConcurrencyTests: GRDBTestCase {
             throw error
         }
         return dbPool
+#endif
     }
     
     // Test for sample code in Documentation.docc/DatabaseSharing.md.
