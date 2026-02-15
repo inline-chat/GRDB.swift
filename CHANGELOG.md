@@ -7,6 +7,7 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 
 #### 7.x Releases
 
+- `7.10.x` Releases - [7.10.0](#7100)
 - `7.9.x` Releases - [7.9.0](#790)
 - `7.8.x` Releases - [7.8.0](#780)
 - `7.7.x` Releases - [7.7.0](#770) - [7.7.1](#771)
@@ -140,6 +141,16 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 - [0.110.0](#01100), ...
 
 ---
+
+## 7.10.0
+
+Released February 15, 2025
+
+- **Documentation fixes** by [@bellebethcooper](https://github.com/bellebethcooper), [@Cykelero](https://github.com/Cykelero), and [@leejungyeob](https://github.com/leejungyeob) in [#1842](https://github.com/groue/GRDB.swift/pull/1842), [#1846](https://github.com/groue/GRDB.swift/pull/1846), [#1848](https://github.com/groue/GRDB.swift/pull/1848)
+- **New**: Linux adjustments by [@thinkpractice](https://github.com/thinkpractice) in [#1825](https://github.com/groue/GRDB.swift/pull/1825)
+- **New**: SQLCipher adjustments by [@R4N](https://github.com/R4N) in [#1845](https://github.com/groue/GRDB.swift/pull/1845)
+- **New**: Android and Windows adjustments by [@marcprux](https://github.com/marcprux) in [#1849](https://github.com/groue/GRDB.swift/pull/1849), [#1850](https://github.com/groue/GRDB.swift/pull/1850)
+- **New**: Configure whether UPSERT should update all columns, or no column by [@groue](https://github.com/groue) in [#1852](https://github.com/groue/GRDB.swift/pull/1852)
 
 ## 7.9.0
 
