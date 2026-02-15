@@ -39,10 +39,10 @@ if ProcessInfo.processInfo.environment["SPI_BUILDER"] == "1" {
 }
 
 // GRDB+SQLCipher: Uncomment those lines
-//dependencies.append(.package(url: "https://github.com/sqlcipher/SQLCipher.swift.git", from: "4.11.0"))
-//cSettings.append(.define("SQLITE_HAS_CODEC"))
-//swiftSettings.append(.define("SQLITE_HAS_CODEC"))
-//swiftSettings.append(.define("SQLCipher"))
+dependencies.append(.package(url: "https://github.com/sqlcipher/SQLCipher.swift.git", from: "4.11.0"))
+cSettings.append(.define("SQLITE_HAS_CODEC"))
+swiftSettings.append(.define("SQLITE_HAS_CODEC"))
+swiftSettings.append(.define("SQLCipher"))
 
 let package = Package(
     name: "GRDB",
@@ -55,29 +55,24 @@ let package = Package(
     ],
     products: [
         // GRDB+SQLCipher: Delete the GRDBSQLite library
-        .library(name: "GRDBSQLite", targets: ["GRDBSQLite"]),
         .library(name: "GRDB", targets: ["GRDB"]),
         .library(name: "GRDB-dynamic", type: .dynamic, targets: ["GRDB"]),
     ],
     dependencies: dependencies,
     targets: [
         // GRDB+SQLCipher: Delete the GRDBSQLite target
-        .systemLibrary(
-            name: "GRDBSQLite",
-            providers: [.apt(["libsqlite3-dev"])]),
         // GRDB+SQLCipher: Uncomment the GRDBSQLCipher target
-        //.target(
-        //    name: "GRDBSQLCipher",
-        //    dependencies: [.product(name: "SQLCipher", package: "SQLCipher.swift")]
-        //),
+        .target(
+            name: "GRDBSQLCipher",
+            dependencies: [.product(name: "SQLCipher", package: "SQLCipher.swift")]
+        ),
         .target(
             name: "GRDB",
             dependencies: [
                 // GRDB+SQLCipher: Delete the GRDBSQLite dependency
-                .target(name: "GRDBSQLite"),
                 // GRDB+SQLCipher: Uncomment the SQLCipher and GRDBSQLCipher dependencies
-                //.product(name: "SQLCipher", package: "SQLCipher.swift"),
-                //.target(name: "GRDBSQLCipher"),
+                .product(name: "SQLCipher", package: "SQLCipher.swift"),
+                .target(name: "GRDBSQLCipher"),
             ],
             path: "GRDB",
             resources: [.copy("PrivacyInfo.xcprivacy")],
